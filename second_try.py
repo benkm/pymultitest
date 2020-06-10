@@ -10,7 +10,7 @@ import pdb
 import datetime
 import time
 from scipy.special import gammaincc
-from scipy.optimize import minimize
+from scipy.optimize import minimize, least_squares
 from scanf import scanf
 
 # Input data
@@ -150,7 +150,7 @@ for i in range(samples_cut.shape[0]):
     different_g[i, j] = g_s[i] != g_s[j]
     different_L[i, j] = L_s[i] != L_s[j]
 
-
+# This is true if two data points come from the same original function
 different_ensemble = numpy.logical_or(different_N,
                      numpy.logical_or(different_L,
                                       different_g))
@@ -190,19 +190,42 @@ pvalue = chisq_pvalue(7, chisq)
 chisq2 = chisq_calc(res2.x, cov2_inv)
 pvalue2 = chisq_pvalue(7, chisq2)
 
-c = res.x
 
-pdb.set_trace()
-predictions2 = model1(g_s_cut, L_s_cut, Bbar_s_cut, K1_s_cut,
-                     alpha_fit2, c_fit2, f0_fit2, f1_fit2, lambduh_fit2, nu_fit2, omega_fit2)
+def plot_fit(res):
+  alpha_fit2, c_fit2, f0_fit2, f1_fit2, lambduh_fit2, nu_fit2, omega_fit2 = res.x
+/
+  predictions2 = model1(g_s_cut, L_s_cut, Bbar_s_cut, K1_s_cut,
+                       alpha_fit2, c_fit2, f0_fit2, f1_fit2, lambduh_fit2, nu_fit2, omega_fit2)
 
-plt.errorbar(g_s_cut * L_s_cut, m_s_cut / g_s_cut, yerr=numpy.diag(cov_matrix) ** 0.5 / g_s_cut, ls='', label='data')
-plt.scatter(g_s_cut * L_s_cut, predictions / g_s_cut, color='r', label='prediction')
+  plt.errorbar(g_s_cut * L_s_cut, m_s_cut / g_s_cut, yerr=numpy.diag(cov_matrix) ** 0.5 / g_s_cut, ls='', label='data')
+  plt.scatter(g_s_cut * L_s_cut, predictions / g_s_cut, color='r', label='prediction')
 
-plt.xlabel("gL")
-plt.ylabel("value / g")
-plt.legend()
-plt.close()
+  plt.xlabel("gL")
+  plt.ylabel("value / g")
+  plt.legend()
+  plt.close()
 
 # Compare to Andreas results
-chisq_andreas = chisq_calc([alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit, omega_fit])
+x0 = [alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit, omega_fit]
+chisq_andreas = chisq_calc(x0, cov_inv)
+
+
+# Try using the scipy least-squares method with Nelder-Mead
+def res_function(x, cov_inv):
+  alpha, c, f0, f1, lambduh, nu, omega = x
+
+  # Caculate the residuals between the model and the data
+  predictions = model1(g_s_cut, L_s_cut, Bbar_s_cut, K1_s_cut, alpha, c, f0, f1, lambduh, nu, omega)
+
+  residuals = m_s_cut - predictions
+
+  normalized_residuals = numpy.dot(cov_inv, residuals)
+
+  return normalized_residuals
+
+
+res3 = least_squares(res_function, x0, args=(cov_inv, ), method='lm')
+res4 = least_squares(res_function, x0, args=(cov2_inv, ), method='lm')
+
+chisq3 = chisq_calc(res3.x, cov_inv)
+chisq4 = chisq_calc(res4.x, cov2_inv)
