@@ -113,6 +113,14 @@ def model2(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega(g, L, c, omega)) - 1) * f0 - lambduh * K2(L, N))
 
 
+def model3(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) * (1 + c * numpy.log(g * L))) - 1) * f0 - lambduh * K1(g, N))
+
+
+def model4(N, g, L, Bbar, alpha, c, f0, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (Bbar * (1 + c * numpy.log(g * L))) * f0 - lambduh * K1(g, N))
+
+
 def model1_small(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (f1 * Bbar - 1) * f0 - lambduh * K1(g, N))
 
@@ -136,6 +144,8 @@ omega_fit = 0.800
 
 x0 = [alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit, omega_fit]
 x1 = [alpha_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
+x3 = [alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
+x4 = [alpha_fit, c_fit, f0_fit, lambduh_fit, nu_fit]
 
 
 def cov_matrix_calc(samples_cut, m_s_cut):
@@ -149,9 +159,9 @@ def cov_matrix_calc(samples_cut, m_s_cut):
   # ensembles
   for i in range(samples_cut.shape[0]):
     for j in range(samples_cut.shape[0]):
-      different_N[i, j] = N_s[i] != N_s[j]
-      different_g[i, j] = g_s[i] != g_s[j]
-      different_L[i, j] = L_s[i] != L_s[j]
+      different_N[i, j] = N_s_cut[i] != N_s_cut[j]
+      different_g[i, j] = g_s_cut[i] != g_s_cut[j]
+      different_L[i, j] = L_s_cut[i] != L_s_cut[j]
 
   # This is true if two data points come different simulations
   different_ensemble = numpy.logical_or(different_N,
@@ -168,19 +178,89 @@ def cov_matrix_calc(samples_cut, m_s_cut):
         cov_matrix[i, j] = numpy.mean((samples_cut[i] - m_s_cut[i]) * (samples_cut[j] - m_s_cut[j]))
       # else the value remains zero as there is no covariance between samples from different ensembles
 
-  return cov_matrix
+  return cov_matrix, different_ensemble
 
 
-cov_matrix = cov_matrix_calc(samples_cut, m_s_cut)
+cov_matrix, different_ensemble = cov_matrix_calc(samples_cut, m_s_cut)
 cov_1_2 = numpy.linalg.cholesky(cov_matrix)
 cov_inv = numpy.linalg.inv(cov_1_2)
 
 
-def chisq_calc(x, cov_inv, model_function):
-  # Caculate the residuals between the model and the data
-  predictions = model_function(N_s_cut, g_s_cut, L_s_cut, Bbar_s_cut, *x)
+# Extract the difference between two Bbar values for the same ensemble
+g_s_new = []
+L_s_new = []
+N_s_new = []
+Bbar_s_new1 = []
+Bbar_s_new2 = []
 
-  residuals = m_s_cut - predictions
+samples_new = []
+
+m_s_new1 = []
+m_s_new2 = []
+
+counter = 0
+
+for i in range(len(g_s_cut)):
+  for k in range(i, len(g_s_cut)):
+    if i != k and different_ensemble[i, k] == 0:
+      # These configs are the same but with different ensembles
+      if Bbar_s_cut[i] > Bbar_s_cut[k]:
+        g_s_new.append(g_s_cut[i])
+        L_s_new.append(L_s_cut[i])
+        N_s_new.append(N_s_cut[i])
+        Bbar_s_new1.append(Bbar_s_cut[k])
+        Bbar_s_new2.append(Bbar_s_cut[i])
+        m_s_new2.append(m_s_cut[i])
+        m_s_new1.append(m_s_cut[k])
+
+
+        samples_new.append(samples_cut[i] - samples_cut[k])
+
+      else:
+        g_s_new.append(g_s_cut[k])
+        L_s_new.append(L_s_cut[k])
+        N_s_new.append(N_s_cut[k])
+        Bbar_s_new2.append(Bbar_s_cut[k])
+        Bbar_s_new1.append(Bbar_s_cut[i])
+        m_s_new2.append(m_s_cut[k])
+        m_s_new1.append(m_s_cut[i])
+
+        samples_new.append(samples_cut[k] - samples_cut[i])
+
+g_s_new = numpy.array(g_s_new)
+L_s_new = numpy.array(L_s_new)
+N_s_new = numpy.array(N_s_new)
+m_s_new1 = numpy.array(m_s_new1)
+m_s_new2 = numpy.array(m_s_new2)
+
+
+samples_new = numpy.array(samples_new)
+m_s_new = m_s_new2 - m_s_new1
+
+# Bbar_s_new should be filled with identical values
+assert len(set(Bbar_s_new1)) == 1
+assert len(set(Bbar_s_new2)) == 1
+
+diff_Bbar = Bbar_s_new2[0] - Bbar_s_new1[0]
+
+cov_matrix_new = numpy.diag(numpy.diag(numpy.cov(samples_new)))
+cov_1_2_new = numpy.linalg.cholesky(cov_matrix_new)
+cov_inv_new = numpy.linalg.inv(cov_1_2_new)
+
+x3_diff_Bbar = [c_fit, f0_fit * f1_fit, nu_fit]
+
+
+# In the following model F takes on the role of f0 * f1
+# Looking at the difference between mass values at two BBars
+def model3_diff_Bbar(N, g, L, diff_Bbar, c, F, nu):
+  return g ** 2 * (g * L) ** (-1 / nu) * F * diff_Bbar * (1 + c * numpy.log(g * L))
+
+
+def chisq_calc(x, cov_inv, model_function, m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_cut, L_s=L_s_cut, Bbar_s=Bbar_s_cut):
+  # Caculate the residuals between the model and the data
+  predictions = model_function(N_s, g_s, L_s, Bbar_s, *x)
+
+  residuals = m_s - predictions
 
   normalized_residuals = numpy.dot(cov_inv, residuals)
 
@@ -255,13 +335,44 @@ def plot_fit(res, cov_matrix, model_function, ext=1, alpha=0, lambduh=0, incl_K1
   plt.close()
 
 
+def plot_fit_diff_Bbar(res, cov_matrix, model_function, ext=1):
+  """
+    ext : extension factor towards origin - model is plotted to 1 / (GL_max * ext)
+  """
+  N = 2
+
+  std_diag = numpy.diag(cov_matrix) ** 0.5
+
+  for g in set(g_s_new):
+    entries = numpy.argwhere(g_s_new == g)[:, 0]
+
+    # Now sort by L values
+    sort = numpy.argsort(L_s_new[entries])
+
+    plt.errorbar(1 / (g * L_s_new[entries][sort]), m_s_new[entries][sort] / g, yerr=std_diag[entries][sort] / g, ls='', label=f'g = {g}', color=colors(g, 0.1, 0.6))
+    plt.scatter(1 / (g * L_s_new[entries][sort]), m_s_new[entries][sort] / g, facecolors='none', edgecolors=colors(g, 0.1, 0.6))
+
+    L_range = numpy.linspace(GL_min / g, GL_max * ext / g, 1000)
+
+    predictions = model_function(N, g, L_range, diff_Bbar, *res.x)
+
+    # Plot a smooth line for the model
+    plt.plot(1 / (g * L_range), predictions / g, color=colors(g, 0.1, 0.6))
+
+  plt.xlabel("1 / gL")
+  plt.ylabel("value / g")
+  # plt.legend()
+  plt.savefig(f"graphs/model_fit{model_function.__name__}_{today.year}_{today.month}_{today.day}.png")
+  plt.show()
+  plt.close()
+
 # Try using the scipy least-squares method with Nelder-Mead
-def res_function(x, cov_inv, model_function):
+def res_function(x, cov_inv, model_function, m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_cut, L_s=L_s_cut, Bbar_s=Bbar_s_cut):
 
   # Caculate the residuals between the model and the data
-  predictions = model_function(N_s_cut, g_s_cut, L_s_cut, Bbar_s_cut, *x)
+  predictions = model_function(N_s, g_s, L_s, Bbar_s, *x)
 
-  residuals = m_s_cut - predictions
+  residuals = m_s - predictions
 
   normalized_residuals = numpy.dot(cov_inv, residuals)
 
@@ -274,8 +385,28 @@ if __name__ == '__main__':
   x_dict[model1_small], x_dict[model2_small] = x1, x1
 
   # Plot model 1
-  res = least_squares(res_function, x_dict[model1], args=(cov_inv, model1), method='lm')
-  plot_fit(res, cov_matrix, model1, ext=10, alpha=res.x[0], lambduh=res.x[4], incl_K1=True)
+  # res = least_squares(res_function, x_dict[model1], args=(cov_inv, model1), method='lm')
+  # plot_fit(res, cov_matrix, model1, ext=10, alpha=res.x[0], lambduh=res.x[4], incl_K1=True)
+  # chisq1 = chisq_calc(res.x, cov_inv, model1)
+  # p1 = chisq_pvalue(g_s_cut.shape[0] - len(res.x), chisq1)
+
+  res3 = least_squares(res_function, x3, args=(cov_inv, model3), method='lm')
+  plot_fit(res3, cov_matrix, model3, ext=10, alpha=res3.x[0], lambduh=res3.x[4], incl_K1=True)
+  chisq3 = chisq_calc(res3.x, cov_inv, model3)
+  p3 = chisq_pvalue(g_s_cut.shape[0] - len(res3.x), chisq3)
+
+  res_new = [res3.x[1], res3.x[2] * res3.x[3], res3.x[5]]
+  res = least_squares(res_function, res_new, args=(cov_inv_new, model3_diff_Bbar),
+                      kwargs={"m_s": m_s_new, "g_s": g_s_new, "L_s": L_s_new, "N_s": N_s_new, "Bbar_s": diff_Bbar})
+  chisq1 = chisq_calc(res.x, cov_inv_new, model3_diff_Bbar, m_s=m_s_new, g_s=g_s_new, L_s=L_s_new, N_s=N_s_new, Bbar_s=diff_Bbar)
+  plot_fit_diff_Bbar(res, cov_matrix_new, model3_diff_Bbar)
+  
+  pdb.set_trace()
+
+  res4 = least_squares(res_function, x4, args=(cov_inv, model4), method='lm')
+  plot_fit(res4, cov_matrix, model4, ext=10, alpha=res4.x[0], lambduh=res4.x[4], incl_K1=True)
+  chisq4 = chisq_calc(res4.x, cov_inv, model4)
+  p4 = chisq_pvalue(g_s_cut.shape[0] - len(res4.x), chisq4)
 
   for model in [model2, model1_small, model2_small]:
     res = least_squares(res_function, x_dict[model], args=(cov_inv, model), method='lm')
