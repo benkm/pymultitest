@@ -6,9 +6,11 @@ import time
 today = datetime.date.fromtimestamp(time.time())
 from chisq_fit import *
 
-directory = f'posterior_data/2020_6_16/'
-data = numpy.load(f"{directory}posterior_data1.npy")
+directory = f'posterior_data/2020_6_17/'
+# data = numpy.load(f"{directory}posterior_data1.npy")
 data3 = numpy.load(f"{directory}posterior_data3.npy")
+data5 = numpy.load(f"{directory}posterior_data5.npy")
+
 
 
 # Extract the points with small omega
@@ -22,7 +24,7 @@ def plot_data(data, param_names):
 
   # There are 7 parameters
   for i in range(len(param_names)):
-    axes[i // r, i % r].scatter(data[:, i], data[:, 7])
+    axes[i // r, i % r].scatter(data[:, i], data[:, -1])
     axes[i // r, i % r].set_xlim(min(data[:, i]), max(data[:, i]))
     axes[i // r, i % r].set_xlim(min(data[:, i]), max(data[:, i]))
     axes[i // r, i % r].set_xlabel(param_names[i])
@@ -33,8 +35,10 @@ def plot_data(data, param_names):
   plt.close()
 
 
-plot_data(data, ['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu', 'omega'])
+# plot_data(data, ['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu', 'omega'])
 plot_data(data3, ['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu'])
+plot_data(data5, ['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu'])
+
 
 # # Describes how broad a prior is used
 # for model in ['1', '2']:

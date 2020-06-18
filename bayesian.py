@@ -129,12 +129,21 @@ def loglike2_small(cube, ndim, nparams):
   return loglikelihood
 
 
+def loglike5(cube, ndim, nparams):
+  alpha, c, f0, f1, lambduh, nu = cube[0], cube[1], cube[2], cube[3], cube[4], cube[5]
+  x = alpha, c, f0, f1, lambduh, nu
+  chisq = chisq_calc(x, cov_inv, model5)
+  loglikelihood = numpy.sum(-0.5 * chisq)
+
+  return loglikelihood
+
+
 # number of dimensions our problem has
 parameters = ["alpha", "c", "a", "b", "lambduh", "nu", "omega"]
 n_params = len(parameters)
 
 
-def run_pymultinest(likelihood_function, model, label, prior):
+def run_pymultinest(likelihood_function, model, label, prior, n_params):
   # run MultiNest
   pymultinest.run(likelihood_function, prior, n_params, outputfiles_basename=datafile + label, resume=False)
   json.dump(parameters, open(datafile + label + 'params.json', 'w')) # save parameter names
@@ -151,9 +160,93 @@ def run_pymultinest(likelihood_function, model, label, prior):
   return a_lnZ
 
 
+def calculate_evidence(prior_size_factor):
+  print("Running MULTINEST")
+  print("===============================================================")
+
+  def prior_6_param_evidence(cube, ndim, nparams):
+    # Calculated on 17th June 2020 from .get_stats()['marginals'][i]['1simga']
+    model1_range = [[0.0005853572784567271, 0.001866498744194777],
+                    [-0.018228204591096673, -0.011775230591446972],
+                    [-11.422102875021858, -9.621105891652844],
+                    [1.7677927812576606, 1.7988108519915715],
+                    [1.0270122283734873, 1.1110952600277195],
+                    [0.6661373392944578, 0.692576691079186]]
+    model2_range = [[-0.022319786471839402, -0.019287358551606647],
+                    [-0.06706385049369484, -0.061266141742762334],
+                    [-9.191897024381701, -7.8282552205573825],
+                    [1.9523234804972314, 1.9853359088313542],
+                    [1.0453962785708737, 1.1307129943447916],
+                    [0.7111315082611166, 0.739203322019145]]
+
+    # param_names = ['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu']
+
+    for i in range(6):
+      mini = min(model1_range[i][0], model2_range[i][0])
+      maxi = max(model1_range[i][1], model2_range[i][1])
+      diff = maxi - mini
+
+      bottom = mini - diff * ((prior_size_factor - 1) / 2)
+      top = maxi + diff * ((prior_size_factor - 1) / 2)
+
+      # print(f"Range on {param_names[i]} : ({bottom}, {top})")
+
+      cube[i] = cube[i] * (top - bottom) + bottom
+      
+  # Run model 3 (log(g))
+  label3 = f'3_prior_{prior_size_factor:.1f}'
+  pymultinest.run(loglike3, prior_6_param_evidence, 6, outputfiles_basename=datafile + label3, resume=False)
+  json.dump(parameters, open(datafile + label3 + 'params.json', 'w')) # save parameter names
+
+  analysis3 = pymultinest.Analyzer(outputfiles_basename=datafile + label3, n_params=6)
+  numpy.save(f"{datafile}posterior_data{label3}.npy", analysis3.get_equal_weighted_posterior())
+
+  param_range3 = [analysis3.get_stats()['marginals'][i]['1sigma'] for i in range(6)]
+  E3 = analysis3.get_stats()['global evidence']
+  E3_delta = analysis3.get_stats()['global evidence error']
+
+  # Run model 5 (log(1 / L))
+  label5 = f'5_prior_{prior_size_factor:.1f}'
+  pymultinest.run(loglike5, prior_6_param_evidence, 6, outputfiles_basename=datafile + label5, resume=False)
+  json.dump(parameters, open(datafile + label5 + 'params.json', 'w')) # save parameter names
+
+  analysis5 = pymultinest.Analyzer(outputfiles_basename=datafile + label5, n_params=6)
+  numpy.save(f"{datafile}posterior_data{label5}.npy", analysis5.get_equal_weighted_posterior())
+
+  param_range5 = [analysis5.get_stats()['marginals'][i]['1sigma'] for i in range(6)]
+  E5 = analysis5.get_stats()['global evidence']
+  E5_delta = analysis5.get_stats()['global evidence error']
+
+  # The errors are independent so the error of the subtraction calculates them in quadrature
+  error = numpy.sqrt(E5_delta ** 2 + E3_delta ** 2)
+
+  evidence = E3 - E5
+
+  print(f"logE = {evidence} +- {error}")
+
+  return evidence, error
+
+
+results = []
+errors = []
+for prior_size_factor in 2 ** numpy.arange(4):
+  result, error = calculate_evidence(prior_size_factor)
+
+  results.append(result)
+  errors.append(error)
+
+results = numpy.array(results)
+errors = numpy.array(errors)
+
+numpy.save(f"evidence_array_{today.year}_{today.month}_{today.day}.npy", results)
+numpy.save(f"evidence_error_array_{today.year}_{today.month}_{today.day}.npy", errors)
+
+
 # model1_lnZ = run_pymultinest(loglike1, model1, '1', prior_7_params)
 # model2_lnZ = run_pymultinest(loglike2, model2, '2', prior_7_params)
-model3_lnZ = run_pymultinest(loglike3, model3, '3', prior_6_params)
+# model3_lnZ = run_pymultinest(loglike3, model3, '3', prior_6_params, 6)
+
+# model5_lnZ = run_pymultinest(loglike5, model5, '5', prior_6_params, 6)
 
 # E = numpy.exp(model1_lnZ - model2_lnZ)
 
@@ -164,8 +257,20 @@ model3_lnZ = run_pymultinest(loglike3, model3, '3', prior_6_params)
 # analysis2 = pymultinest.analyse.Analyzer(n_params, outputfiles_basename=datafile + '2')
 # numpy.save(f"{datafile}posterior_data2.npy", analysis2.get_equal_weighted_posterior())
 
-analysis3 = pymultinest.analyse.Analyzer(n_params, outputfiles_basename=datafile + '3')
-numpy.save(f"{datafile}posterior_data3.npy", analysis3.get_equal_weighted_posterior())
+
+# analysis3 = pymultinest.analyse.Analyzer(n_params, outputfiles_basename=datafile + '3')
+# numpy.save(f"{datafile}posterior_data3.npy", analysis3.get_equal_weighted_posterior())
+
+# analysis5 = pymultinest.analyse.Analyzer(n_params, outputfiles_basename=datafile + '5')
+# numpy.save(f"{datafile}posterior_data5.npy", analysis5.get_equal_weighted_posterior())
+
+# param_range3 = [analysis3.get_stats()['marginals'][i]['1sigma'] for i in range(6)]
+# E3 = analysis3.get_stats()['global evidence']
+# E3_delta = analysis3.get_stats()['global evidence error']
+
+# param_range5 = [analysis5.get_stats()['marginals'][i]['1sigma'] for i in range(6)]
+# E5 = analysis5.get_stats()['global evidence']
+# E5_delta = analysis5.get_stats()['global evidence error']
 
 
 # Run also for the smaller models without corrections to scaling

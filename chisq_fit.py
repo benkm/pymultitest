@@ -1,17 +1,19 @@
+import datetime
 import json
-import sys
-import numpy
+import pdb
 import pickle
-from numpy import log, exp, pi
-import scipy.stats, scipy
+import sys
+import time
+
 # import pymultinest
 import matplotlib.pyplot as plt
-import pdb
-import datetime
-import time
-from scipy.special import gammaincc
-from scipy.optimize import minimize, least_squares
+import numpy
+import scipy
+import scipy.stats
+from numpy import exp, log, pi
 from scanf import scanf
+from scipy.optimize import least_squares, minimize
+from scipy.special import gammaincc
 
 today = datetime.date.fromtimestamp(time.time())
 
@@ -93,6 +95,10 @@ def Omega(g, L, c, omega):
   return 1 / (1 + c * (g * L) ** -omega)
 
 
+def Omega_2(g, L, c, omega):
+  return 1 + c * (g * L) ** -omega
+
+
 # Used to alter the range of data being considered
 def cut(GL_min, GL_max, g_s, Bbar_s, N_s, L_s, samples, m_s):
   GL_s = g_s * L_s
@@ -119,6 +125,11 @@ def model3(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu):
 
 def model4(N, g, L, Bbar, alpha, c, f0, lambduh, nu):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (Bbar * (1 + c * numpy.log(g * L))) * f0 - lambduh * K1(g, N))
+
+
+# 6 parameter alternative model
+def model5(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) * (1 + c * numpy.log(g * L))) - 1) * f0 - lambduh * K2(L, N))
 
 
 def model1_small(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
@@ -366,6 +377,7 @@ def plot_fit_diff_Bbar(res, cov_matrix, model_function, ext=1):
   plt.show()
   plt.close()
 
+
 # Try using the scipy least-squares method with Nelder-Mead
 def res_function(x, cov_inv, model_function, m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_cut, L_s=L_s_cut, Bbar_s=Bbar_s_cut):
 
@@ -389,6 +401,14 @@ if __name__ == '__main__':
   # plot_fit(res, cov_matrix, model1, ext=10, alpha=res.x[0], lambduh=res.x[4], incl_K1=True)
   # chisq1 = chisq_calc(res.x, cov_inv, model1)
   # p1 = chisq_pvalue(g_s_cut.shape[0] - len(res.x), chisq1)
+
+  # Plot model 5
+  res5 = least_squares(res_function, x3, args=(cov_inv, model5), method='lm')
+  plot_fit(res5, cov_matrix, model5, ext=10, alpha=res5.x[0], lambduh=res5.x[4], incl_K1=True)
+  chisq5 = chisq_calc(res5.x, cov_inv, model5)
+  p5 = chisq_pvalue(g_s_cut.shape[0] - len(res5.x), chisq5)
+
+  pdb.set_trace()
 
   res3 = least_squares(res_function, x3, args=(cov_inv, model3), method='lm')
   plot_fit(res3, cov_matrix, model3, ext=10, alpha=res3.x[0], lambduh=res3.x[4], incl_K1=True)
