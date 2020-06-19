@@ -4,6 +4,7 @@ import pdb
 import pickle
 import sys
 import time
+import os
 
 # import pymultinest
 import matplotlib.pyplot as plt
@@ -132,6 +133,21 @@ def model5(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) * (1 + c * numpy.log(g * L))) - 1) * f0 - lambduh * K2(L, N))
 
 
+# Model 3 but with the correct Omega expression
+def model6(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / (1 + c * numpy.log(g * L))) - 1) * f0 - lambduh * K1(g, N))
+
+
+# Model 5 but with the correct Omega expression
+def model7(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / (1 + c * numpy.log(g * L))) - 1) * f0 - lambduh * K2(L, N))
+
+
+# Model 1 but with the correct Omega expression
+def model8(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K1(g, N))
+
+
 def model1_small(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (f1 * Bbar - 1) * f0 - lambduh * K1(g, N))
 
@@ -157,6 +173,7 @@ x0 = [alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit, omega_fit]
 x1 = [alpha_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
 x3 = [alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
 x4 = [alpha_fit, c_fit, f0_fit, lambduh_fit, nu_fit]
+x8 = [0.00015, -0.7, -10.5, 1.70, 1.08, 0.676, 0.8]
 
 
 def cov_matrix_calc(samples_cut, m_s_cut):
@@ -301,10 +318,13 @@ def colors(g, mini, maxi):
     raise(ValueError)
 
 
-def plot_fit(res, cov_matrix, model_function, ext=1, alpha=0, lambduh=0, incl_K1=False, incl_alpha=False, K=K1):
+def plot_fit(res, cov_matrix, model_function, directory, GL_min, GL_max, ext=1, alpha=0, lambduh=0, incl_K1=False, incl_alpha=False, K=K1):
   """
     ext : extension factor towards origin - model is plotted to 1 / (GL_max * ext)
   """
+  if not os.path.isdir(directory):
+    os.makedirs(directory)
+
   N = 2
 
   std_diag = numpy.diag(cov_matrix) ** 0.5
@@ -341,7 +361,7 @@ def plot_fit(res, cov_matrix, model_function, ext=1, alpha=0, lambduh=0, incl_K1
   plt.xlabel("1 / gL")
   plt.ylabel("value / g")
   # plt.legend()
-  plt.savefig(f"graphs/model_fit{model_function.__name__}_{today.year}_{today.month}_{today.day}.png")
+  plt.savefig(f"{directory}best_fit_{model_function.__name__}_GLmin{GL_min}_GLmax{GL_max}_{today.year}_{today.month}_{today.day}.png")
   plt.show()
   plt.close()
 
@@ -392,9 +412,11 @@ def res_function(x, cov_inv, model_function, m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_c
 
 
 if __name__ == '__main__':
-  x_dict = {}
-  x_dict[model1], x_dict[model2] = x0, x0
-  x_dict[model1_small], x_dict[model2_small] = x1, x1
+  directory = f'best_fit_graphs/{today.year}_{today.month}_{today.day}/'
+
+  # x_dict = {}
+  # x_dict[model1], x_dict[model2] = x0, x0
+  # x_dict[model1_small], x_dict[model2_small] = x1, x1
 
   # Plot model 1
   # res = least_squares(res_function, x_dict[model1], args=(cov_inv, model1), method='lm')
@@ -403,31 +425,65 @@ if __name__ == '__main__':
   # p1 = chisq_pvalue(g_s_cut.shape[0] - len(res.x), chisq1)
 
   # Plot model 5
-  res5 = least_squares(res_function, x3, args=(cov_inv, model5), method='lm')
-  plot_fit(res5, cov_matrix, model5, ext=10, alpha=res5.x[0], lambduh=res5.x[4], incl_K1=True)
-  chisq5 = chisq_calc(res5.x, cov_inv, model5)
-  p5 = chisq_pvalue(g_s_cut.shape[0] - len(res5.x), chisq5)
+  # res5 = least_squares(res_function, x3, args=(cov_inv, model5), method='lm')
+  # plot_fit(res5, cov_matrix, model5, ext=10, alpha=res5.x[0], lambduh=res5.x[4], incl_K1=True)
+  # chisq5 = chisq_calc(res5.x, cov_inv, model5)
+  # p5 = chisq_pvalue(g_s_cut.shape[0] - len(res5.x), chisq5)
 
-  pdb.set_trace()
+  # Plot model 6
+  # res6 = least_squares(res_function, x3, args=(cov_inv, model6), method='lm')
+  # plot_fit(res6, cov_matrix, model6, directory, GL_min, GL_max, ext=10, alpha=res6.x[0], lambduh=res6.x[4], incl_K1=True)
+  # chisq6 = chisq_calc(res6.x, cov_inv, model6)
+  # dof = g_s_cut.shape[0] - len(res6.x)
+  # p6 = chisq_pvalue(dof, chisq6)
+  # print(f"chisq = {chisq6}")
+  # print(f"chisq/dof = {chisq6 / dof}")
+  # print(f"pvalue = {p6}")
+  # numpy.save(f"{directory}model6_best_fit_params.npy", numpy.array(res6.x))
 
-  res3 = least_squares(res_function, x3, args=(cov_inv, model3), method='lm')
-  plot_fit(res3, cov_matrix, model3, ext=10, alpha=res3.x[0], lambduh=res3.x[4], incl_K1=True)
-  chisq3 = chisq_calc(res3.x, cov_inv, model3)
-  p3 = chisq_pvalue(g_s_cut.shape[0] - len(res3.x), chisq3)
+  # Plot model 7
+  # res7 = least_squares(res_function, x3, args=(cov_inv, model7), method='lm')
+  # plot_fit(res7, cov_matrix, model7, directory, GL_min, GL_max, ext=10, alpha=res7.x[0], lambduh=res7.x[4], incl_K1=True)
+  # chisq7 = chisq_calc(res7.x, cov_inv, model7)
+  # dof = g_s_cut.shape[0] - len(res7.x)
+  # p7 = chisq_pvalue(dof, chisq7)
+  # print(f"chisq = {chisq7}")
+  # print(f"chisq/dof = {chisq7 / dof}")
+  # print(f"pvalue = {p7}")
+  # numpy.save(f"{directory}model7_best_fit_params.npy", numpy.array(res7.x))
 
-  res_new = [res3.x[1], res3.x[2] * res3.x[3], res3.x[5]]
-  res = least_squares(res_function, res_new, args=(cov_inv_new, model3_diff_Bbar),
-                      kwargs={"m_s": m_s_new, "g_s": g_s_new, "L_s": L_s_new, "N_s": N_s_new, "Bbar_s": diff_Bbar})
-  chisq1 = chisq_calc(res.x, cov_inv_new, model3_diff_Bbar, m_s=m_s_new, g_s=g_s_new, L_s=L_s_new, N_s=N_s_new, Bbar_s=diff_Bbar)
-  plot_fit_diff_Bbar(res, cov_matrix_new, model3_diff_Bbar)
+
+  # Plot model 8
+  res8 = least_squares(res_function, x8, args=(cov_inv, model8), method='lm')
+  plot_fit(res8, cov_matrix, model8, directory, GL_min, GL_max, ext=10, alpha=res8.x[0], lambduh=res8.x[4], incl_K1=True)
+  chisq8 = chisq_calc(res8.x, cov_inv, model8)
+  dof = g_s_cut.shape[0] - len(res8.x)
+  p8 = chisq_pvalue(dof, chisq8)
+  print(f"chisq = {chisq8}")
+  print(f"chisq/dof = {chisq8 / dof}")
+  print(f"pvalue = {p8}")
+  numpy.save(f"{directory}model8_best_fit_params.npy", numpy.array(res8.x))
+
+  # pdb.set_trace()
+
+  # res3 = least_squares(res_function, x3, args=(cov_inv, model3), method='lm')
+  # plot_fit(res3, cov_matrix, model3, ext=10, alpha=res3.x[0], lambduh=res3.x[4], incl_K1=True)
+  # chisq3 = chisq_calc(res3.x, cov_inv, model3)
+  # p3 = chisq_pvalue(g_s_cut.shape[0] - len(res3.x), chisq3)
+
+  # # res_new = [res3.x[1], res3.x[2] * res3.x[3], res3.x[5]]
+  # # res = least_squares(res_function, res_new, args=(cov_inv_new, model3_diff_Bbar),
+  # #                     kwargs={"m_s": m_s_new, "g_s": g_s_new, "L_s": L_s_new, "N_s": N_s_new, "Bbar_s": diff_Bbar})
+  # # chisq1 = chisq_calc(res.x, cov_inv_new, model3_diff_Bbar, m_s=m_s_new, g_s=g_s_new, L_s=L_s_new, N_s=N_s_new, Bbar_s=diff_Bbar)
+  # # plot_fit_diff_Bbar(res, cov_matrix_new, model3_diff_Bbar)
   
-  pdb.set_trace()
+  # pdb.set_trace()
 
-  res4 = least_squares(res_function, x4, args=(cov_inv, model4), method='lm')
-  plot_fit(res4, cov_matrix, model4, ext=10, alpha=res4.x[0], lambduh=res4.x[4], incl_K1=True)
-  chisq4 = chisq_calc(res4.x, cov_inv, model4)
-  p4 = chisq_pvalue(g_s_cut.shape[0] - len(res4.x), chisq4)
+  # res4 = least_squares(res_function, x4, args=(cov_inv, model4), method='lm')
+  # plot_fit(res4, cov_matrix, model4, ext=10, alpha=res4.x[0], lambduh=res4.x[4], incl_K1=True)
+  # chisq4 = chisq_calc(res4.x, cov_inv, model4)
+  # p4 = chisq_pvalue(g_s_cut.shape[0] - len(res4.x), chisq4)
 
-  for model in [model2, model1_small, model2_small]:
-    res = least_squares(res_function, x_dict[model], args=(cov_inv, model), method='lm')
-    plot_fit(res, cov_matrix, model, ext=10, alpha=res.x[0])
+  # for model in [model2, model1_small, model2_small]:
+  #   res = least_squares(res_function, x_dict[model], args=(cov_inv, model), method='lm')
+  #   plot_fit(res, cov_matrix, model, ext=10, alpha=res.x[0])
