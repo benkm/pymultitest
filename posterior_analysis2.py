@@ -55,27 +55,27 @@ def plot_data(data, basename, model):
   plt.close()
 
 
-directory = f'posterior_data/2020_6_18/'
+directory = f'posterior_data/2020_6_22/'
 
 data_dict = {}
-# for model in [model6, model7]:
-#   basename = f"{directory}{model.__name__}_GLmin{GL_min}_GLmax{GL_max}"
-
-#   data = pickle.load(open(f"{basename}_analysis.pcl", "rb"))
-#   plot_data(data, basename, model)
-  
-#   data_dict[model.__name__] = data
-
-
-# E6, E7 = data_dict["model6"][0], data_dict["model7"][0]
-# deltaE_6, deltaE_7 = data_dict["model6"][1], data_dict["model7"][1]
-# print(f"Global Evidence : {E6 - E7}")
-# print(f"Error = {numpy.sqrt(deltaE_6 ** 2 + deltaE_7 ** 2)}")
-
-for model in [model8]:
+for model in [model82, model102]:
   basename = f"{directory}{model.__name__}_GLmin{GL_min}_GLmax{GL_max}"
 
   data = pickle.load(open(f"{basename}_analysis.pcl", "rb"))
   plot_data(data, basename, model)
   
   data_dict[model.__name__] = data
+
+
+E6, E7 = data_dict["model82"][0], data_dict["model102"][0]
+deltaE_6, deltaE_7 = data_dict["model82"][1], data_dict["model102"][1]
+print(f"Global Evidence : {E6 - E7}")
+print(f"Error = {numpy.sqrt(deltaE_6 ** 2 + deltaE_7 ** 2)}")
+
+# for model in [model82]:
+#   basename = f"{directory}{model.__name__}_GLmin{GL_min}_GLmax{GL_max}"
+
+#   data = pickle.load(open(f"{basename}_analysis.pcl", "rb"))
+#   plot_data(data, basename, model)
+  
+#   data_dict[model.__name__] = data

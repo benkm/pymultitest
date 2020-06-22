@@ -20,7 +20,7 @@ today = datetime.date.fromtimestamp(time.time())
 
 
 # Input data
-GL_min = 12.8
+GL_min = 8
 GL_max = 76.8
 no_samples = 500
 Z0 = 0.252731
@@ -148,6 +148,47 @@ def model8(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K1(g, N))
 
 
+# Model 2 but with the correct Omega expression
+def model10(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K2(L, N))
+
+
+# Look at c varying between different g
+def c(g, c1, c2, c3, c5, c6):
+  return  numpy.where(g == 0.1, c1,
+            numpy.where(g == 0.2, c2,
+              numpy.where(g == 0.3, c3,
+                numpy.where(g == 0.5, c5,
+                  numpy.where(g == 0.6, c6, numpy.nan)
+                )
+              )
+            )
+          )
+
+
+def model9(N, g, L, Bbar, alpha, c1, c2, c3, c5, c6, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / (1 + c(g, c1, c2, c3, c5, c6) * numpy.log(g * L))) - 1) * f0 - lambduh * K1(g, N))
+
+
+# A copy of model 8 for the purpose of differentiating model 8 with prior, to model
+# 8 without prior.
+def model81(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K1(g, N))
+
+
+def model82(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K1(g, N))
+
+
+# Like model 81 but with K2
+def model101(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K2(L, N))
+
+
+def model102(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K2(L, N))
+
+
 def model1_small(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (f1 * Bbar - 1) * f0 - lambduh * K1(g, N))
 
@@ -174,6 +215,8 @@ x1 = [alpha_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
 x3 = [alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
 x4 = [alpha_fit, c_fit, f0_fit, lambduh_fit, nu_fit]
 x8 = [0.00015, -0.7, -10.5, 1.70, 1.08, 0.676, 0.8]
+x9 = [0.00015, -0.7, -0.7, -0.7, -0.7, -0.7, -10.5, 1.70, 1.08, 0.676, 0.8]
+x10 = [-0.017, 1.75, -9, 5.25, 1, 0.71, -0.087]
 
 
 def cov_matrix_calc(samples_cut, m_s_cut):
@@ -284,13 +327,9 @@ def model3_diff_Bbar(N, g, L, diff_Bbar, c, F, nu):
   return g ** 2 * (g * L) ** (-1 / nu) * F * diff_Bbar * (1 + c * numpy.log(g * L))
 
 
-def chisq_calc(x, cov_inv, model_function, m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_cut, L_s=L_s_cut, Bbar_s=Bbar_s_cut):
+def chisq_calc(x, cov_inv, model_function, **kwargs):
   # Caculate the residuals between the model and the data
-  predictions = model_function(N_s, g_s, L_s, Bbar_s, *x)
-
-  residuals = m_s - predictions
-
-  normalized_residuals = numpy.dot(cov_inv, residuals)
+  normalized_residuals = res_function(x, cov_inv, model_function, **kwargs)
 
   chisq = numpy.sum(normalized_residuals ** 2)
 
@@ -329,7 +368,7 @@ def plot_fit(res, cov_matrix, model_function, directory, GL_min, GL_max, ext=1, 
 
   std_diag = numpy.diag(cov_matrix) ** 0.5
 
-  for Bbar in set(Bbar_s_cut):
+  for Bbar in set(Bbar_s):
     for g in set(g_s_cut):
       entries = numpy.argwhere(numpy.logical_and(g_s_cut == g, Bbar_s_cut == Bbar))[:, 0]
 
@@ -399,7 +438,8 @@ def plot_fit_diff_Bbar(res, cov_matrix, model_function, ext=1):
 
 
 # Try using the scipy least-squares method with Nelder-Mead
-def res_function(x, cov_inv, model_function, m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_cut, L_s=L_s_cut, Bbar_s=Bbar_s_cut):
+def res_function(x, cov_inv, model_function, prior=False, prior_values=None, prior_sigmas=None,
+                m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_cut, L_s=L_s_cut, Bbar_s=Bbar_s_cut):
 
   # Caculate the residuals between the model and the data
   predictions = model_function(N_s, g_s, L_s, Bbar_s, *x)
@@ -407,6 +447,22 @@ def res_function(x, cov_inv, model_function, m_s=m_s_cut, N_s=N_s_cut, g_s=g_s_c
   residuals = m_s - predictions
 
   normalized_residuals = numpy.dot(cov_inv, residuals)
+
+  # Include a prior in the form of extra residuals
+  if prior:
+    extra_piece = []
+
+    # Get the parameter names
+    param_names = numpy.array(model_function.__code__.co_varnames[4:])
+
+    for entry in prior_values:
+      index = numpy.argwhere(param_names == entry)[0][0]
+      
+      extra_piece.append((x[index] - prior_values[entry]) / prior_sigmas[entry])
+
+    extra_piece = numpy.array(extra_piece)
+
+    normalized_residuals = numpy.concatenate((normalized_residuals, extra_piece))
 
   return normalized_residuals
 
@@ -454,16 +510,92 @@ if __name__ == '__main__':
 
 
   # Plot model 8
-  res8 = least_squares(res_function, x8, args=(cov_inv, model8), method='lm')
-  plot_fit(res8, cov_matrix, model8, directory, GL_min, GL_max, ext=10, alpha=res8.x[0], lambduh=res8.x[4], incl_K1=True)
-  chisq8 = chisq_calc(res8.x, cov_inv, model8)
-  dof = g_s_cut.shape[0] - len(res8.x)
-  p8 = chisq_pvalue(dof, chisq8)
-  print(f"chisq = {chisq8}")
-  print(f"chisq/dof = {chisq8 / dof}")
-  print(f"pvalue = {p8}")
-  numpy.save(f"{directory}model8_best_fit_params.npy", numpy.array(res8.x))
+  # res8 = least_squares(res_function, x8, args=(cov_inv, model8), method='lm')
+  # plot_fit(res8, cov_matrix, model8, directory, GL_min, GL_max, ext=10, alpha=res8.x[0], lambduh=res8.x[4], incl_K1=True)
+  # chisq8 = chisq_calc(res8.x, cov_inv, model8)
+  # dof = g_s_cut.shape[0] - len(res8.x)
+  # p8 = chisq_pvalue(dof, chisq8)
+  # print(f"chisq = {chisq8}")
+  # print(f"chisq/dof = {chisq8 / dof}")
+  # print(f"pvalue = {p8}")
+  # numpy.save(f"{directory}model8_best_fit_params.npy", numpy.array(res8.x))
 
+
+  # res10 = least_squares(res_function, x10, args=(cov_inv, model10), method='lm')
+  # plot_fit(res10, cov_matrix, model10, directory, GL_min, GL_max, ext=10, alpha=res10.x[0], lambduh=res10.x[4], incl_K1=True)
+  # chisq10 = chisq_calc(res10.x, cov_inv, model10)
+  # dof = g_s_cut.shape[0] - len(res10.x)
+  # p10 = chisq_pvalue(dof, chisq10)
+  # print(f"chisq = {chisq10}")
+  # print(f"chisq/dof = {chisq10 / dof}")
+  # print(f"pvalue = {p10}")
+  # numpy.save(f"{directory}model10_best_fit_params.npy", numpy.array(res10.x))
+  # pdb.set_trace()
+
+
+  # To investigate the model with priors feed these into the res_function
+  # call this model model 81
+
+  # prior_values = {"omega": 0.782}
+  # prior_sigmas = {"omega": 0.0013}
+
+  # kwargs = {"prior": True, "prior_values": prior_values, "prior_sigmas": prior_sigmas}
+  # res81 = least_squares(res_function, x8, args=(cov_inv, model81), method='lm', kwargs=kwargs)
+  # plot_fit(res81, cov_matrix, model81, directory, GL_min, GL_max, ext=10, alpha=res81.x[0], lambduh=res81.x[4], incl_K1=True)
+  # chisq81 = chisq_calc(res81.x, cov_inv, model81, **kwargs)
+  # dof = g_s_cut.shape[0] - len(res81.x)
+  # p81 = chisq_pvalue(dof, chisq81)
+  # print(f"chisq = {chisq81}")
+  # print(f"chisq/dof = {chisq81 / dof}")
+  # print(f"pvalue = {p81}")
+  # numpy.save(f"{directory}model81_best_fit_params.npy", numpy.array(res81.x))
+
+  prior_values = {"omega": 0.782, "nu": 0.7073}
+  prior_sigmas = {"omega": 0.0013, "nu": 0.0035}
+
+  kwargs = {"prior": True, "prior_values": prior_values, "prior_sigmas": prior_sigmas}
+  res82 = least_squares(res_function, x8, args=(cov_inv, model82), method='lm', kwargs=kwargs)
+  plot_fit(res82, cov_matrix, model82, directory, GL_min, GL_max, ext=10, alpha=res82.x[0], lambduh=res82.x[4], incl_K1=True)
+  chisq82 = chisq_calc(res82.x, cov_inv, model82, **kwargs)
+  dof = g_s_cut.shape[0] - len(res82.x)
+  p82 = chisq_pvalue(dof, chisq82)
+  print(f"chisq = {chisq82}")
+  print(f"chisq/dof = {chisq82 / dof}")
+  print(f"pvalue = {p82}")
+  numpy.save(f"{directory}model82_best_fit_params.npy", numpy.array(res82.x))
+
+
+  res102 = least_squares(res_function, x8, args=(cov_inv, model102), method='lm', kwargs=kwargs)
+  plot_fit(res102, cov_matrix, model102, directory, GL_min, GL_max, ext=10, alpha=res102.x[0], lambduh=res102.x[4], incl_K1=True)
+  chisq102 = chisq_calc(res102.x, cov_inv, model102, **kwargs)
+  dof = g_s_cut.shape[0] - len(res102.x)
+  p102 = chisq_pvalue(dof, chisq102)
+  print(f"chisq = {chisq102}")
+  print(f"chisq/dof = {chisq102 / dof}")
+  print(f"pvalue = {p102}")
+  numpy.save(f"{directory}model102_best_fit_params.npy", numpy.array(res102.x))
+
+
+  # kwargs = {"prior": True, "prior_values": prior_values, "prior_sigmas": prior_sigmas}
+  # res84 = least_squares(res_function, x8, args=(cov_inv, model84), method='lm', kwargs=kwargs)
+  # plot_fit(res84, cov_matrix, model84, directory, GL_min, GL_max, ext=10, alpha=res84.x[0], lambduh=res84.x[4], incl_K1=True)
+  # chisq84 = chisq_calc(res84.x, cov_inv, model84, **kwargs)
+  # dof = g_s_cut.shape[0] - len(res84.x)
+  # p84 = chisq_pvalue(dof, chisq84)
+  # print(f"chisq = {chisq84}")
+  # print(f"chisq/dof = {chisq84 / dof}")
+  # print(f"pvalue = {p84}")
+  # numpy.save(f"{directory}model84_best_fit_params.npy", numpy.array(res84.x))
+  # Investigate model 9
+  # res9 = least_squares(res_function, x9, args=(cov_inv, model9), method='lm')
+  # plot_fit(res9, cov_matrix, model9, directory, GL_min, GL_max, ext=10, alpha=res9.x[0], lambduh=res9.x[4], incl_K1=True)
+  # chisq9 = chisq_calc(res9.x, cov_inv, model9)
+  # dof = g_s_cut.shape[0] - len(res9.x)
+  # p9 = chisq_pvalue(dof, chisq9)
+  # print(f"chisq = {chisq9}")
+  # print(f"chisq/dof = {chisq9 / dof}")
+  # print(f"pvalue = {p9}")
+  # numpy.save(f"{directory}model9_best_fit_params.npy", numpy.array(res9.x))
   # pdb.set_trace()
 
   # res3 = least_squares(res_function, x3, args=(cov_inv, model3), method='lm')
