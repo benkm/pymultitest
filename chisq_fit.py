@@ -189,6 +189,60 @@ def model102(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((f1 * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K2(L, N))
 
 
+# Like model 8 but f1 -> 1 / f1
+def model12(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 * Omega_2(g, L, c, omega))) - 1) * f0 - lambduh * K1(g, N))
+
+
+# Like model 10 but f1 -> 1 / f1
+def model13(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 * Omega_2(g, L, c, omega))) - 1) * f0 - lambduh * K2(L, N))
+
+
+# f1 / (1 + c * (gL)^omega) --> 1 / (f1 + c * (gL)^omega)
+def model14(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 + c * (g * L) ** -omega)) - 1) * f0 - lambduh * K1(g, N))
+
+
+def model15(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 + c * (g * L) ** -omega)) - 1) * f0 - lambduh * K2(L, N))
+
+
+# f1 / (1 + c * (gL)^omega) --> 1 / (f1 + (gL)^omega / c)
+def model16(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 + (g * L) ** -omega / c)) - 1) * f0 - lambduh * K1(g, N))
+
+
+def model17(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 + (g * L) ** -omega / c)) - 1) * f0 - lambduh * K2(L, N))
+
+
+# No corrections to scaling - for the purpose of finding the best f1
+def model18(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (Bbar * f1 - 1) * f0 - lambduh * K1(g, N))
+
+
+f1_special = 1.70277772
+
+
+def model22(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((((f1 + f1_special) * Bbar) / Omega_2(g, L, c, omega)) - 1) * f0 - lambduh * K1(g, N))
+
+
+def model23(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 + (1 / f1_special) + c * (g * L) ** -omega)) - 1) * f0 - lambduh * K1(g, N))
+
+
+# Same as model23 except with K2
+def model24(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 + (1 / f1_special) + c * (g * L) ** -omega)) - 1) * f0 - lambduh * K2(L, N))
+
+
+
+# This is the same as model 8 but with alpha and lambduh set to their mean values
+# This is done purely in order to better explore the likelihood landscape of the
+# remaining 5 parameters
+# def model20(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
 def model1_small(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (f1 * Bbar - 1) * f0 - lambduh * K1(g, N))
 
@@ -199,6 +253,7 @@ def model2_small(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
 
 # Use the same cut as Andreas for now
 g_s_cut, Bbar_s_cut, N_s_cut, L_s_cut, samples_cut, m_s_cut = cut(GL_min, GL_max, g_s, Bbar_s, N_s, L_s, samples, m_s)
+
 
 # Best fit params
 alpha_fit = 0.0018
@@ -216,7 +271,14 @@ x3 = [alpha_fit, c_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
 x4 = [alpha_fit, c_fit, f0_fit, lambduh_fit, nu_fit]
 x8 = [0.00015, -0.7, -10.5, 1.70, 1.08, 0.676, 0.8]
 x9 = [0.00015, -0.7, -0.7, -0.7, -0.7, -0.7, -10.5, 1.70, 1.08, 0.676, 0.8]
-x10 = [-0.017, 1.75, -9, 5.25, 1, 0.71, -0.087]
+# x10 = [-0.017, 1.75, -9, 5.25, 1, 0.71, -0.087]  # Outdated as uses omega < 0
+x10 = [-1.56964558e-02, -5.08092294e-01, -9.06697176e+00, 9.70731725e-01,
+        9.70743246e-01, 7.12407520e-01, 8.12431112e-02]
+x18 = [alpha_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
+x22 = [alpha_fit, c_fit, f0_fit, f1_fit - f1_special, lambduh_fit, nu_fit, omega_fit]
+x_odd = numpy.array([ 9.84309254e-04,  2.65788448e+07, -1.00850915e+01,  4.82541893e+07,
+        1.07051641e+00,  6.84771439e-01, -2.19677215e-02])
+x24 = [-0.015, -0.4, -9, 0.35, 0.96, 0.71, 0.1]
 
 
 def cov_matrix_calc(samples_cut, m_s_cut):
@@ -255,6 +317,14 @@ def cov_matrix_calc(samples_cut, m_s_cut):
 cov_matrix, different_ensemble = cov_matrix_calc(samples_cut, m_s_cut)
 cov_1_2 = numpy.linalg.cholesky(cov_matrix)
 cov_inv = numpy.linalg.inv(cov_1_2)
+
+
+# For the calculation of f1
+GL_min2 = 32
+g_s_cut2, Bbar_s_cut2, N_s_cut2, L_s_cut2, samples_cut2, m_s_cut2 = cut(GL_min2, GL_max, g_s, Bbar_s, N_s, L_s, samples, m_s)
+cov_matrix2, different_ensemble2 = cov_matrix_calc(samples_cut2, m_s_cut2)
+cov2_1_2 = numpy.linalg.cholesky(cov_matrix2)
+cov2_inv = numpy.linalg.inv(cov2_1_2)
 
 
 # Extract the difference between two Bbar values for the same ensemble
@@ -357,7 +427,8 @@ def colors(g, mini, maxi):
     raise(ValueError)
 
 
-def plot_fit(res, cov_matrix, model_function, directory, GL_min, GL_max, ext=1, alpha=0, lambduh=0, incl_K1=False, incl_alpha=False, K=K1):
+def plot_fit(res, cov_matrix, model_function, directory, GL_min, GL_max, ext=1, alpha=0, lambduh=0, incl_K1=False, incl_alpha=False, K=K1,
+             m_s_cut=m_s_cut, N_s_cut=N_s_cut, g_s_cut=g_s_cut, L_s_cut=L_s_cut, Bbar_s_cut=Bbar_s_cut):
   """
     ext : extension factor towards origin - model is plotted to 1 / (GL_max * ext)
   """
@@ -509,8 +580,10 @@ if __name__ == '__main__':
   # numpy.save(f"{directory}model7_best_fit_params.npy", numpy.array(res7.x))
 
 
-  # Plot model 8
-  # res8 = least_squares(res_function, x8, args=(cov_inv, model8), method='lm')
+  # # Plot model 8
+  bounds = ([-numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, 0],
+            [numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf])
+  # res8 = least_squares(res_function, x8, bounds=bounds, args=(cov_inv, model8), method='dogbox')
   # plot_fit(res8, cov_matrix, model8, directory, GL_min, GL_max, ext=10, alpha=res8.x[0], lambduh=res8.x[4], incl_K1=True)
   # chisq8 = chisq_calc(res8.x, cov_inv, model8)
   # dof = g_s_cut.shape[0] - len(res8.x)
@@ -521,17 +594,62 @@ if __name__ == '__main__':
   # numpy.save(f"{directory}model8_best_fit_params.npy", numpy.array(res8.x))
 
 
-  # res10 = least_squares(res_function, x10, args=(cov_inv, model10), method='lm')
-  # plot_fit(res10, cov_matrix, model10, directory, GL_min, GL_max, ext=10, alpha=res10.x[0], lambduh=res10.x[4], incl_K1=True)
-  # chisq10 = chisq_calc(res10.x, cov_inv, model10)
-  # dof = g_s_cut.shape[0] - len(res10.x)
-  # p10 = chisq_pvalue(dof, chisq10)
-  # print(f"chisq = {chisq10}")
-  # print(f"chisq/dof = {chisq10 / dof}")
-  # print(f"pvalue = {p10}")
-  # numpy.save(f"{directory}model10_best_fit_params.npy", numpy.array(res10.x))
+  res10 = least_squares(res_function, x10, bounds=bounds, args=(cov_inv, model10), method='dogbox')
+  plot_fit(res10, cov_matrix, model10, directory, GL_min, GL_max, ext=10, alpha=res10.x[0], lambduh=res10.x[4], incl_K1=True)
+  chisq10 = chisq_calc(res10.x, cov_inv, model10)
+  dof = g_s_cut.shape[0] - len(res10.x)
+  p10 = chisq_pvalue(dof, chisq10)
+  print(f"chisq = {chisq10}")
+  print(f"chisq/dof = {chisq10 / dof}")
+  print(f"pvalue = {p10}")
+  numpy.save(f"{directory}model10_best_fit_params.npy", numpy.array(res10.x))
+  pdb.set_trace()
+
+
+  # x22 = res8.x - numpy.array([0, 0, 0, f1_special, 0, 0, 0])
+  # res22 = least_squares(res_function, x22, args=(cov_inv, model22), method='dogbox')
+  # plot_fit(res22, cov_matrix, model22, directory, GL_min, GL_max, ext=10, alpha=res22.x[0], lambduh=res22.x[4], incl_K1=True)
+  # chisq22 = chisq_calc(res22.x, cov_inv, model22)
+  # dof = g_s_cut.shape[0] - len(res22.x)
+  # p22 = chisq_pvalue(dof, chisq22)
+  # print(f"chisq = {chisq22}")
+  # print(f"chisq/dof = {chisq22 / dof}")
+  # print(f"pvalue = {p22}")
+  # numpy.save(f"{directory}model22_best_fit_params.npy", numpy.array(res22.x))
+
   # pdb.set_trace()
 
+  # x23 = res8.x
+  # f1 = x23[3]
+  # c = x23[1]
+  # x23[3] = 1 / f1 - 1 / f1_special
+  # x23[1] = c / f1
+  # res23 = least_squares(res_function, x23, bounds=bounds, args=(cov_inv, model23), method='dogbox')
+  # plot_fit(res23, cov_matrix, model23, directory, GL_min, GL_max, ext=10, alpha=res23.x[0], lambduh=res23.x[4], incl_K1=True)
+  # chisq23 = chisq_calc(res23.x, cov_inv, model23)
+  # dof = g_s_cut.shape[0] - len(res23.x)
+  # p23 = chisq_pvalue(dof, chisq23)
+  # print(f"chisq = {chisq23}")
+  # print(f"chisq/dof = {chisq23 / dof}")
+  # print(f"pvalue = {p23}")
+  # numpy.save(f"{directory}model23_best_fit_params.npy", numpy.array(res23.x))
+
+
+  x24 = res10.x
+  f1 = x24[3]
+  c = x24[1]
+  x24[3] = 1 / f1 - 1 / f1_special
+  x24[1] = c / f1
+  res24 = least_squares(res_function, x24, bounds=bounds, args=(cov_inv, model24), method='dogbox')
+  plot_fit(res24, cov_matrix, model24, directory, GL_min, GL_max, ext=10, alpha=res24.x[0], lambduh=res24.x[4], incl_K1=True)
+  chisq24 = chisq_calc(res24.x, cov_inv, model24)
+  dof = g_s_cut.shape[0] - len(res24.x)
+  p24 = chisq_pvalue(dof, chisq24)
+  print(f"chisq = {chisq24}")
+  print(f"chisq/dof = {chisq24 / dof}")
+  print(f"pvalue = {p24}")
+  numpy.save(f"{directory}model24_best_fit_params.npy", numpy.array(res24.x))
+  pdb.set_trace()
 
   # To investigate the model with priors feed these into the res_function
   # call this model model 81
@@ -550,31 +668,46 @@ if __name__ == '__main__':
   # print(f"pvalue = {p81}")
   # numpy.save(f"{directory}model81_best_fit_params.npy", numpy.array(res81.x))
 
-  prior_values = {"omega": 0.782, "nu": 0.7073}
-  prior_sigmas = {"omega": 0.0013, "nu": 0.0035}
+  # prior_values = {"omega": 0.782, "nu": 0.7073}
+  # prior_sigmas = {"omega": 0.0013, "nu": 0.0035}
 
-  kwargs = {"prior": True, "prior_values": prior_values, "prior_sigmas": prior_sigmas}
-  res82 = least_squares(res_function, x8, args=(cov_inv, model82), method='lm', kwargs=kwargs)
-  plot_fit(res82, cov_matrix, model82, directory, GL_min, GL_max, ext=10, alpha=res82.x[0], lambduh=res82.x[4], incl_K1=True)
-  chisq82 = chisq_calc(res82.x, cov_inv, model82, **kwargs)
-  dof = g_s_cut.shape[0] - len(res82.x)
-  p82 = chisq_pvalue(dof, chisq82)
-  print(f"chisq = {chisq82}")
-  print(f"chisq/dof = {chisq82 / dof}")
-  print(f"pvalue = {p82}")
-  numpy.save(f"{directory}model82_best_fit_params.npy", numpy.array(res82.x))
+  # kwargs = {"prior": True, "prior_values": prior_values, "prior_sigmas": prior_sigmas}
+  # res82 = least_squares(res_function, x8, args=(cov_inv, model82), method='lm', kwargs=kwargs)
+  # plot_fit(res82, cov_matrix, model82, directory, GL_min, GL_max, ext=10, alpha=res82.x[0], lambduh=res82.x[4], incl_K1=True)
+  # chisq82 = chisq_calc(res82.x, cov_inv, model82, **kwargs)
+  # dof = g_s_cut.shape[0] - len(res82.x)
+  # p82 = chisq_pvalue(dof, chisq82)
+  # print(f"chisq = {chisq82}")
+  # print(f"chisq/dof = {chisq82 / dof}")
+  # print(f"pvalue = {p82}")
+  # numpy.save(f"{directory}model82_best_fit_params.npy", numpy.array(res82.x))
 
 
-  res102 = least_squares(res_function, x8, args=(cov_inv, model102), method='lm', kwargs=kwargs)
-  plot_fit(res102, cov_matrix, model102, directory, GL_min, GL_max, ext=10, alpha=res102.x[0], lambduh=res102.x[4], incl_K1=True)
-  chisq102 = chisq_calc(res102.x, cov_inv, model102, **kwargs)
-  dof = g_s_cut.shape[0] - len(res102.x)
-  p102 = chisq_pvalue(dof, chisq102)
-  print(f"chisq = {chisq102}")
-  print(f"chisq/dof = {chisq102 / dof}")
-  print(f"pvalue = {p102}")
-  numpy.save(f"{directory}model102_best_fit_params.npy", numpy.array(res102.x))
+  # res102 = least_squares(res_function, x8, args=(cov_inv, model102), method='lm', kwargs=kwargs)
+  # plot_fit(res102, cov_matrix, model102, directory, GL_min, GL_max, ext=10, alpha=res102.x[0], lambduh=res102.x[4], incl_K1=True)
+  # chisq102 = chisq_calc(res102.x, cov_inv, model102, **kwargs)
+  # dof = g_s_cut.shape[0] - len(res102.x)
+  # p102 = chisq_pvalue(dof, chisq102)
+  # print(f"chisq = {chisq102}")
+  # print(f"chisq/dof = {chisq102 / dof}")
+  # print(f"pvalue = {p102}")
+  # numpy.save(f"{directory}model102_best_fit_params.npy", numpy.array(res102.x))
 
+
+  #  Take a look at the 5 parameter no correction to scaling model
+  # res18 = least_squares(res_function, x18, args=(cov2_inv, model18), method='lm', 
+  #             kwargs={"m_s": m_s_cut2, "N_s": N_s_cut2, "g_s": g_s_cut2, "L_s": L_s_cut2, "Bbar_s": Bbar_s_cut2})
+  # plot_fit(res18, cov_matrix2, model18, directory, GL_min2, GL_max, ext=10, alpha=res18.x[0], lambduh=res18.x[3], incl_K1=True, 
+  #         m_s_cut=m_s_cut2, N_s_cut=N_s_cut2, g_s_cut=g_s_cut2, L_s_cut=L_s_cut2, Bbar_s_cut=Bbar_s_cut2)
+  # pdb.set_trace()
+  # # Gives 1.70277772 for f1 :)
+  # chisq18 = chisq_calc(res18.x, cov2_inv, model18)
+  # dof = g_s_cut.shape[0] - len(res18.x)
+  # p18 = chisq_pvalue(dof, chisq18)
+  # print(f"chisq = {chisq18}")
+  # print(f"chisq/dof = {chisq18 / dof}")
+  # print(f"pvalue = {p18}")
+  # numpy.save(f"{directory}model18_best_fit_params.npy", numpy.array(res18.x))
 
   # kwargs = {"prior": True, "prior_values": prior_values, "prior_sigmas": prior_sigmas}
   # res84 = least_squares(res_function, x8, args=(cov_inv, model84), method='lm', kwargs=kwargs)

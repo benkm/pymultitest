@@ -12,13 +12,14 @@ today = datetime.date.fromtimestamp(time.time())
 
 GL_min = 8
 GL_max = 76.8
+points = 1000
 directory = f"graphs/{today.year}_{today.month}_{today.day}/"
 
-for model in ["model82", "model102"]:
+for model in ["model24"]:
   if not os.path.isdir(directory):
       os.makedirs(directory)
 
-  samples = loadMCSamples(f'posterior_data/2020_6_22/{model}_GLmin{GL_min}_GLmax{GL_max}')
+  samples = loadMCSamples(f'posterior_data/{today.year}_{today.month}_{today.day}/{model}_GLmin{GL_min}_GLmax{GL_max}_points{points}')
   g = plots.get_subplot_plotter()
 
   g.triangle_plot(samples, filled=True)
