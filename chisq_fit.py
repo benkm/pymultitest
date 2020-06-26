@@ -20,8 +20,8 @@ today = datetime.date.fromtimestamp(time.time())
 
 
 # Input data
-GL_min = 8
-GL_max = 76.8
+GL_min = 25.6
+GL_max = 64.0
 no_samples = 500
 Z0 = 0.252731
 
@@ -278,10 +278,12 @@ x18 = [alpha_fit, f0_fit, f1_fit, lambduh_fit, nu_fit]
 x22 = [alpha_fit, c_fit, f0_fit, f1_fit - f1_special, lambduh_fit, nu_fit, omega_fit]
 x_odd = numpy.array([ 9.84309254e-04,  2.65788448e+07, -1.00850915e+01,  4.82541893e+07,
         1.07051641e+00,  6.84771439e-01, -2.19677215e-02])
+x23 = [ 1.39774886e-03, -8.16216752e-02, -1.00925303e+01,  2.05436109e-02,
+        1.06381225e+00,  6.84422890e-01,  4.53802770e-01]
 x24 = [-0.015, -0.4, -9, 0.35, 0.96, 0.71, 0.1]
 
 
-def cov_matrix_calc(samples_cut, m_s_cut):
+def cov_matrix_calc(samples_cut, m_s_cut, N_s_cut=N_s_cut, g_s_cut=g_s_cut, L_s_cut=L_s_cut):
   # In reality the covariance between different ensembles is 0. We can set it as
   # such to get a more accurate calculation of the covariance matrix
   different_N = numpy.zeros((samples_cut.shape[0], samples_cut.shape[0]))
@@ -541,6 +543,17 @@ def res_function(x, cov_inv, model_function, prior=False, prior_values=None, pri
 if __name__ == '__main__':
   directory = f'best_fit_graphs/{today.year}_{today.month}_{today.day}/'
 
+  alpha_range = [-0.1, 0.1]
+  c_range = [-10, 10]
+  f0_range = [-100, 100]
+  f1_range = [-10, 10]
+  lambduh_range = [0, 2]
+  nu_range = [0.5, 0.9]
+  omega_range = [0, 2]
+
+  bounds = ([alpha_range[0], c_range[0], f0_range[0], f1_range[0], lambduh_range[0], nu_range[0], omega_range[0]],
+    [alpha_range[1], c_range[1], f0_range[1], f1_range[1], lambduh_range[1], nu_range[1], omega_range[1]])
+
   # x_dict = {}
   # x_dict[model1], x_dict[model2] = x0, x0
   # x_dict[model1_small], x_dict[model2_small] = x1, x1
@@ -550,6 +563,17 @@ if __name__ == '__main__':
   # plot_fit(res, cov_matrix, model1, ext=10, alpha=res.x[0], lambduh=res.x[4], incl_K1=True)
   # chisq1 = chisq_calc(res.x, cov_inv, model1)
   # p1 = chisq_pvalue(g_s_cut.shape[0] - len(res.x), chisq1)
+
+  # Plot model 3
+  # res3 = least_squares(res_function, x3, args=(cov_inv, model3), method='lm')
+  # plot_fit(res3, cov_matrix, model3, directory, GL_min, GL_max, ext=10, alpha=res3.x[0], lambduh=res3.x[4], incl_K1=True)
+  # chisq3 = chisq_calc(res3.x, cov_inv, model3)
+  # dof = g_s_cut.shape[0] - len(res3.x)
+  # p3 = chisq_pvalue(dof, chisq3)
+  # print(f"chisq = {chisq3}")
+  # print(f"chisq/dof = {chisq3 / dof}")
+  # print(f"pvalue = {p3}")
+  # numpy.save(f"{directory}model3_best_fit_params.npy", numpy.array(res3.x))
 
   # Plot model 5
   # res5 = least_squares(res_function, x3, args=(cov_inv, model5), method='lm')
@@ -581,8 +605,8 @@ if __name__ == '__main__':
 
 
   # # Plot model 8
-  bounds = ([-numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, 0],
-            [numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf])
+  # bounds = ([-numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, -numpy.inf, 0],
+  #           [numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf, numpy.inf])
   # res8 = least_squares(res_function, x8, bounds=bounds, args=(cov_inv, model8), method='dogbox')
   # plot_fit(res8, cov_matrix, model8, directory, GL_min, GL_max, ext=10, alpha=res8.x[0], lambduh=res8.x[4], incl_K1=True)
   # chisq8 = chisq_calc(res8.x, cov_inv, model8)
@@ -592,7 +616,7 @@ if __name__ == '__main__':
   # print(f"chisq/dof = {chisq8 / dof}")
   # print(f"pvalue = {p8}")
   # numpy.save(f"{directory}model8_best_fit_params.npy", numpy.array(res8.x))
-
+  # pdb.set_trace()
 
   res10 = least_squares(res_function, x10, bounds=bounds, args=(cov_inv, model10), method='dogbox')
   plot_fit(res10, cov_matrix, model10, directory, GL_min, GL_max, ext=10, alpha=res10.x[0], lambduh=res10.x[4], incl_K1=True)
@@ -624,6 +648,7 @@ if __name__ == '__main__':
   # c = x23[1]
   # x23[3] = 1 / f1 - 1 / f1_special
   # x23[1] = c / f1
+  # pdb.set_trace()
   # res23 = least_squares(res_function, x23, bounds=bounds, args=(cov_inv, model23), method='dogbox')
   # plot_fit(res23, cov_matrix, model23, directory, GL_min, GL_max, ext=10, alpha=res23.x[0], lambduh=res23.x[4], incl_K1=True)
   # chisq23 = chisq_calc(res23.x, cov_inv, model23)
@@ -635,11 +660,12 @@ if __name__ == '__main__':
   # numpy.save(f"{directory}model23_best_fit_params.npy", numpy.array(res23.x))
 
 
-  x24 = res10.x
-  f1 = x24[3]
-  c = x24[1]
-  x24[3] = 1 / f1 - 1 / f1_special
-  x24[1] = c / f1
+  # x24 = res10.x
+  # f1 = x24[3]
+  # c = x24[1]
+  # x24[3] = 1 / f1 - 1 / f1_special
+  # x24[1] = c / f1
+
   res24 = least_squares(res_function, x24, bounds=bounds, args=(cov_inv, model24), method='dogbox')
   plot_fit(res24, cov_matrix, model24, directory, GL_min, GL_max, ext=10, alpha=res24.x[0], lambduh=res24.x[4], incl_K1=True)
   chisq24 = chisq_calc(res24.x, cov_inv, model24)
@@ -650,6 +676,8 @@ if __name__ == '__main__':
   print(f"pvalue = {p24}")
   numpy.save(f"{directory}model24_best_fit_params.npy", numpy.array(res24.x))
   pdb.set_trace()
+
+  
 
   # To investigate the model with priors feed these into the res_function
   # call this model model 81
