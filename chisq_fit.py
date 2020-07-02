@@ -20,8 +20,8 @@ today = datetime.date.fromtimestamp(time.time())
 
 
 # Input data
-GL_min = 25.6
-GL_max = 64.0
+GL_min = 8
+GL_max = 76.8
 no_samples = 500
 Z0 = 0.252731
 
@@ -238,6 +238,22 @@ def model24(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 + (1 / f1_special) + c * (g * L) ** -omega)) - 1) * f0 - lambduh * K2(L, N))
 
 
+def model25(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 * (1 + c * (g * L) ** -omega))) - 1) * f0 - lambduh * K1(g, N))
+
+
+def model26(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar / (f1 * (1 + c * (g * L) ** -omega))) - 1) * f0 - lambduh * K2(L, N))
+
+
+# Motivated by the functional form of the theory
+def model27(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((Bbar / ((1 + c * (g * L) ** -omega))) - f0) / f1) - lambduh * K1(g, N))
+
+
+def model28(N, g, L, Bbar, alpha, c, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((Bbar / ((1 + c * (g * L) ** -omega))) - f0) / f1) - lambduh * K2(L, N))
+
 
 # This is the same as model 8 but with alpha and lambduh set to their mean values
 # This is done purely in order to better explore the likelihood landscape of the
@@ -281,6 +297,10 @@ x_odd = numpy.array([ 9.84309254e-04,  2.65788448e+07, -1.00850915e+01,  4.82541
 x23 = [ 1.39774886e-03, -8.16216752e-02, -1.00925303e+01,  2.05436109e-02,
         1.06381225e+00,  6.84422890e-01,  4.53802770e-01]
 x24 = [-0.015, -0.4, -9, 0.35, 0.96, 0.71, 0.1]
+x25 = [0.0014, -0.05, -10, 0.6, 1.064, 0.684, 0.453]
+x26 = [-0.015, -0.4, -9, 1, 0.96, 0.71, 0.1]
+x27 = [0.0014, -0.05, 0.58, -0.038, 1.064, 0.684, 0.453]
+x28 = [-0.016, -0.97, 20, -2.2, 0.98, 0.713, 0.0018]
 
 
 def cov_matrix_calc(samples_cut, m_s_cut, N_s_cut=N_s_cut, g_s_cut=g_s_cut, L_s_cut=L_s_cut):
@@ -546,7 +566,7 @@ if __name__ == '__main__':
   alpha_range = [-0.1, 0.1]
   c_range = [-10, 10]
   f0_range = [-100, 100]
-  f1_range = [-10, 10]
+  f1_range = [-20, 20]
   lambduh_range = [0, 2]
   nu_range = [0.5, 0.9]
   omega_range = [0, 2]
@@ -618,16 +638,16 @@ if __name__ == '__main__':
   # numpy.save(f"{directory}model8_best_fit_params.npy", numpy.array(res8.x))
   # pdb.set_trace()
 
-  res10 = least_squares(res_function, x10, bounds=bounds, args=(cov_inv, model10), method='dogbox')
-  plot_fit(res10, cov_matrix, model10, directory, GL_min, GL_max, ext=10, alpha=res10.x[0], lambduh=res10.x[4], incl_K1=True)
-  chisq10 = chisq_calc(res10.x, cov_inv, model10)
-  dof = g_s_cut.shape[0] - len(res10.x)
-  p10 = chisq_pvalue(dof, chisq10)
-  print(f"chisq = {chisq10}")
-  print(f"chisq/dof = {chisq10 / dof}")
-  print(f"pvalue = {p10}")
-  numpy.save(f"{directory}model10_best_fit_params.npy", numpy.array(res10.x))
-  pdb.set_trace()
+  # res10 = least_squares(res_function, x10, bounds=bounds, args=(cov_inv, model10), method='dogbox')
+  # plot_fit(res10, cov_matrix, model10, directory, GL_min, GL_max, ext=10, alpha=res10.x[0], lambduh=res10.x[4], incl_K1=True)
+  # chisq10 = chisq_calc(res10.x, cov_inv, model10)
+  # dof = g_s_cut.shape[0] - len(res10.x)
+  # p10 = chisq_pvalue(dof, chisq10)
+  # print(f"chisq = {chisq10}")
+  # print(f"chisq/dof = {chisq10 / dof}")
+  # print(f"pvalue = {p10}")
+  # numpy.save(f"{directory}model10_best_fit_params.npy", numpy.array(res10.x))
+  # pdb.set_trace()
 
 
   # x22 = res8.x - numpy.array([0, 0, 0, f1_special, 0, 0, 0])
@@ -666,18 +686,58 @@ if __name__ == '__main__':
   # x24[3] = 1 / f1 - 1 / f1_special
   # x24[1] = c / f1
 
-  res24 = least_squares(res_function, x24, bounds=bounds, args=(cov_inv, model24), method='dogbox')
-  plot_fit(res24, cov_matrix, model24, directory, GL_min, GL_max, ext=10, alpha=res24.x[0], lambduh=res24.x[4], incl_K1=True)
-  chisq24 = chisq_calc(res24.x, cov_inv, model24)
-  dof = g_s_cut.shape[0] - len(res24.x)
-  p24 = chisq_pvalue(dof, chisq24)
-  print(f"chisq = {chisq24}")
-  print(f"chisq/dof = {chisq24 / dof}")
-  print(f"pvalue = {p24}")
-  numpy.save(f"{directory}model24_best_fit_params.npy", numpy.array(res24.x))
-  pdb.set_trace()
+  # res24 = least_squares(res_function, x24, bounds=bounds, args=(cov_inv, model24), method='dogbox')
+  # plot_fit(res24, cov_matrix, model24, directory, GL_min, GL_max, ext=10, alpha=res24.x[0], lambduh=res24.x[4], incl_K1=True)
+  # chisq24 = chisq_calc(res24.x, cov_inv, model24)
+  # dof = g_s_cut.shape[0] - len(res24.x)
+  # p24 = chisq_pvalue(dof, chisq24)
+  # print(f"chisq = {chisq24}")
+  # print(f"chisq/dof = {chisq24 / dof}")
+  # print(f"pvalue = {p24}")
+  # numpy.save(f"{directory}model24_best_fit_params.npy", numpy.array(res24.x))
+  # pdb.set_trace()
 
-  
+  res25 = least_squares(res_function, x25, bounds=bounds, args=(cov_inv, model25), method='dogbox')
+  plot_fit(res25, cov_matrix, model25, directory, GL_min, GL_max, ext=10, alpha=res25.x[0], lambduh=res25.x[4], incl_K1=True)
+  chisq25 = chisq_calc(res25.x, cov_inv, model25)
+  dof = g_s_cut.shape[0] - len(res25.x)
+  p25 = chisq_pvalue(dof, chisq25)
+  print(f"chisq = {chisq25}")
+  print(f"chisq/dof = {chisq25 / dof}")
+  print(f"pvalue = {p25}")
+  numpy.save(f"{directory}model25_best_fit_params.npy", numpy.array(res25.x))
+
+
+  res26 = least_squares(res_function, x26, bounds=bounds, args=(cov_inv, model26), method='dogbox')
+  plot_fit(res26, cov_matrix, model26, directory, GL_min, GL_max, ext=10, alpha=res26.x[0], lambduh=res26.x[4], incl_K1=True)
+  chisq26 = chisq_calc(res26.x, cov_inv, model26)
+  dof = g_s_cut.shape[0] - len(res26.x)
+  p26 = chisq_pvalue(dof, chisq26)
+  print(f"chisq = {chisq26}")
+  print(f"chisq/dof = {chisq26 / dof}")
+  print(f"pvalue = {p26}")
+  numpy.save(f"{directory}model26_best_fit_params.npy", numpy.array(res26.x))
+
+  res27 = least_squares(res_function, x27, bounds=bounds, args=(cov_inv, model27), method='dogbox')
+  plot_fit(res27, cov_matrix, model27, directory, GL_min, GL_max, ext=10, alpha=res27.x[0], lambduh=res27.x[4], incl_K1=True)
+  chisq27 = chisq_calc(res27.x, cov_inv, model27)
+  dof = g_s_cut.shape[0] - len(res27.x)
+  p27 = chisq_pvalue(dof, chisq27)
+  print(f"chisq = {chisq27}")
+  print(f"chisq/dof = {chisq27 / dof}")
+  print(f"pvalue = {p27}")
+  numpy.save(f"{directory}model27_best_fit_params.npy", numpy.array(res27.x))
+
+
+  res28 = least_squares(res_function, x28, bounds=bounds, args=(cov_inv, model28), method='dogbox')
+  plot_fit(res28, cov_matrix, model28, directory, GL_min, GL_max, ext=10, alpha=res28.x[0], lambduh=res28.x[4], incl_K1=True)
+  chisq28 = chisq_calc(res28.x, cov_inv, model28)
+  dof = g_s_cut.shape[0] - len(res28.x)
+  p28 = chisq_pvalue(dof, chisq28)
+  print(f"chisq = {chisq28}")
+  print(f"chisq/dof = {chisq28 / dof}")
+  print(f"pvalue = {p28}")
+  numpy.save(f"{directory}model28_best_fit_params.npy", numpy.array(res28.x)) 
 
   # To investigate the model with priors feed these into the res_function
   # call this model model 81
