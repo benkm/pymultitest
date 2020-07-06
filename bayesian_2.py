@@ -99,20 +99,31 @@ def run_pymultinest(prior_range, model, GL_min, GL_max, n_params, directory,
   # Make a cut down version for the purpose of quicker transfer
   analysis_small = [E, delta_E, sigma_1_range, sigma_2_range, median]
 
+  print(f"{current_process()}: saving {basename}_analysis_small.pcl")
+  pickle.dump(analysis_small, open(f"{basename}_analysis_small.pcl", "wb"))
+
   if clean_files:
     # Remove the remaining saved files to conserve disk space
     print(f"Removing files : {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}*")
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}*')
-
-  print(f"{current_process()}: saving {basename}_analysis_small.pcl")
-  pickle.dump(analysis_data, open(f"{basename}_analysis_small.pcl", "wb"))
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}ev.dat')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}live.points')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}.paramnames')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}params.json')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}phys_live.points')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}post_equal_weights.dat')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}post_separate.dat')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}.ranges')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}resume.dat')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}stats.dat')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}summary.txt')
+    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}.txt')
 
   return analysis
 
 
 if __name__ == "__main__":
   # Where the results are saved
-  directory = f'model_output_{today.year}_{today.month}_{today.day}/'
+  directory = f'model_output_{today.year}_{today.month}_{2}/'
 
   # Default prior range
   alpha_range = [-0.1, 0.1]
@@ -222,12 +233,13 @@ if __name__ == "__main__":
     analysis1 = run_pymultinest(prior, model1, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
     analysis2 = run_pymultinest(prior, model2, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
 
-
   p = Pool()
 
   # pdb.set_trace()
 
-  p.map(run, range(len(priors)), chunksize=1)
+  p.map(run, range(3 ** 7), chunksize=1)
+  # for i in range(3 ** 7 - 6, 3 ** 7):
+  #   run(i)
 
   # alpha_range = [-0.1, 0.1]
   # c_range = [-2, 2]
