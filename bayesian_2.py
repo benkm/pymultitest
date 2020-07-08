@@ -123,15 +123,15 @@ def run_pymultinest(prior_range, model, GL_min, GL_max, n_params, directory,
 
 if __name__ == "__main__":
   # Where the results are saved
-  directory = f'model_output_{today.year}_{today.month}_{2}/'
+  directory = f'model_output_{today.year}_{today.month}_{today.day}/'
 
   # Default prior range
   alpha_range = [-0.1, 0.1]
   c_range = [-1, 1]
   f0_range = [-2, 2]
-  f1_range = [-1, 1]
-  lambduh_range = [0, 2]
-  nu_range = [0.5, 0.9]
+  f1_range = [-0.25, 0.25]
+  lambduh_range = [0.5, 1.5]
+  nu_range = [0.6, 0.8]
   omega_range = [0, 2]
 
   prior_range = [alpha_range, c_range, f0_range, f1_range, lambduh_range, nu_range, omega_range]
@@ -168,47 +168,47 @@ if __name__ == "__main__":
   ## Prior range study
   GL_min = 8
   GL_max = 76.8
-  points = 1000
+  points = 8000
 
  # Half ranged
-  alpha_range_small = [-0.05, 0.05]
+  # alpha_range_small = [-0.05, 0.05]
   c_range_small = [-0.5, 0.5]
   f0_range_small = [-1, 1]
-  f1_range_small = [-0.5, 0.5]
-  lambduh_range_small = [0.5, 1.5]
-  nu_range_small = [0.6, 0.8]
+  f1_range_small = [-0.125, 0.125]
+  # lambduh_range_small = [0.5, 1.5]
+  nu_range_small = [0.65, 0.75]
   omega_range_small = [0, 1]
 
   # Double ranged
-  alpha_range_large = [-0.2, 0.2]
+  # alpha_range_large = [-0.2, 0.2]
   c_range_large = [-2, 2]
   f0_range_large = [-4, 4]
-  f1_range_large = [-2, 2]
-  lambduh_range_large = [-1, 3]
-  nu_range_large = [0.3, 1.1]
+  f1_range_large = [-0.5, 0.5]
+  # lambduh_range_large = [-1, 3]
+  # nu_range_large = [0.5, 0.9]
   omega_range_large = [0, 4]
 
-  alpha_ranges = [alpha_range_small, alpha_range, alpha_range_large]
+  # alpha_ranges = [alpha_range_small, alpha_range, alpha_range_large]
   c_ranges = [c_range_small, c_range, c_range_large]
   f0_ranges = [f0_range_small, f0_range, f0_range_large]
   f1_ranges = [f1_range_small, f1_range, f1_range_large]
-  lambduh_ranges = [lambduh_range_small, lambduh_range, lambduh_range_large]
-  nu_ranges = [nu_range_small, nu_range, nu_range_large]
+  # lambduh_ranges = [lambduh_range_small, lambduh_range, lambduh_range_large]
+  # nu_ranges = [nu_range_small, nu_range, nu_range_large]
   omega_ranges = [omega_range_small, omega_range, omega_range_large]
 
   # Create all possible combinations of ranges
   priors = []
   names = []  # Model names to keep track
-  for i1 in range(len(alpha_ranges)):
-    for i2 in range(len(c_ranges)):
-      for i3 in range(len(f0_ranges)):
-        for i4 in range(len(f1_ranges)):
-          for i5 in range(len(lambduh_ranges)):
-            for i6 in range(len(nu_ranges)):
-              for i7 in range(len(omega_ranges)):
-                priors.append([alpha_ranges[i1], c_ranges[i2], f0_ranges[i3],
-                      f1_ranges[i4], lambduh_ranges[i5], nu_ranges[i6], omega_ranges[i7]])
-                names.append(f"{i1}_{i2}_{i3}_{i4}_{i5}_{i6}_{i7}")
+  # for i1 in range(len(alpha_ranges)):
+  for i2 in range(len(c_ranges)):
+    for i3 in range(len(f0_ranges)):
+      for i4 in range(len(f1_ranges)):
+        # for i5 in range(len(lambduh_ranges)):
+        # for i6 in range(len(nu_ranges)):
+        for i7 in range(len(omega_ranges)):
+          priors.append([alpha_range, c_ranges[i2], f0_ranges[i3],
+                f1_ranges[i4], lambduh_range, nu_range, omega_ranges[i7]])
+          names.append(f"1_{i2}_{i3}_{i4}_1_1_{i7}")
 
   def run(i):
     print(f"{current_process()}: i = {i}")
@@ -237,7 +237,7 @@ if __name__ == "__main__":
 
   # pdb.set_trace()
 
-  p.map(run, range(3 ** 7), chunksize=1)
+  p.map(run, range(len(priors)), chunksize=1)
   # for i in range(3 ** 7 - 6, 3 ** 7):
   #   run(i)
 

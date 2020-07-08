@@ -11,11 +11,11 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
 today = datetime.date.fromtimestamp(time.time())
-directory = f'posterior_data/{today.year}_{today.month}_{2}/'
+directory = f'posterior_data/{today.year}_{today.month}_{6}/'
 
 GL_min = 8
 GL_max = 76.8
-n_live_points = 1000
+n_live_points = 3000
 
 
 results_full = numpy.zeros((3 ** 7, 9))
@@ -47,6 +47,7 @@ for i1 in range(3):
 
               # z = pd.DataFrame([[i1, i2, i3, i4, i5, i6, i7, E1, E2]], columns=columns)
               # df = pd.concat([z, df], ignore_index=True)
+
 
 # Remove nanvalues
 results1 = results_full[~numpy.isnan(results_full[:, -2])]
@@ -121,3 +122,131 @@ if not os.path.isdir(graph_dir):
     os.makedirs(graph_dir)
 
 plt.savefig(f"{graph_dir}/prior_E_graph_corrected.png")
+
+plt.close()
+
+# Plot some bar charts to for each variable
+# for j in range(7):
+  #   N = 3
+  #   ind = numpy.arange(N)  # the x locations for the groups
+  #   width = 0.4       # the width of the bars
+
+  #   fig = plt.figure()
+  #   ax = fig.add_subplot(111)
+
+  #   values1 = [100 + numpy.mean(results1[results1[:, j] == i][:, -2]) for i in range(3)]
+  #   std1 = [numpy.std(results1[results1[:, j] == i][:, -2]) for i in range(3)]
+  #   rects1 = ax.bar(ind, values1, width, color='r', yerr=std1, bottom=-100)
+
+  #   values2 = [100 + numpy.mean(results2[results2[:, j] == i][:, -1]) for i in range(3)]
+  #   std2 = [numpy.std(results2[results2[:, j] == i][:, -1]) for i in range(3)]
+  #   rects2 = ax.bar(ind + width, values2, width, color='g', yerr=std2, bottom=-100)
+
+  #   ax.set_ylabel('log(E)')
+  #   ax.set_xticks(ind + width)
+  #   ax.set_xticklabels(('0', '1', '2'))
+  #   ax.legend((rects1[0], rects2[0]), ('model1', 'model2'))
+
+  #   def autolabel(rects):
+  #     for rect in rects:
+  #       h = rect.get_height()
+  #       ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * h, '%d' % int(h),
+  #               ha='center', va='bottom')
+
+  #   autolabel(rects1)
+  #   autolabel(rects2)
+
+  #   plt.title(f'{columns[j]}')
+
+  #   plt.show()
+
+
+results2 = results2[results2[:, 1] == 2]
+# results2 = results2[results2[:, 0] == 1]
+# results1 = results1[results1[:, 0] == 2]
+
+
+# For each prior zoom in on the error bands to look for significant results
+for j in range(7):
+  values = [(i - 1) * numpy.log(2) - numpy.mean(results1[:, -2]) + numpy.mean(results1[results1[:, j] == i][:, -2]) for i in range(3)]
+  std = numpy.array([numpy.std(results1[results1[:, j] == i][:, -2]) for i in range(3)])
+  count = numpy.array([numpy.sum(results1[:, j] == i) for i in range(3)])
+  plt.bar([0, 1, 2], values, color='r', yerr=std / numpy.sqrt(count), bottom=numpy.mean(results1[:, -2]))
+
+  plt.title(f'model1 : {columns[j]}')
+
+  plt.show()
+
+  values = [(i - 1) * numpy.log(2) - numpy.mean(results2[:, -1]) + numpy.mean(results2[results2[:, j] == i][:, -1]) for i in range(3)]
+  std = numpy.array([numpy.std(results2[results2[:, j] == i][:, -1]) for i in range(3)])
+  count = numpy.array([numpy.sum(results2[:, j] == i) for i in range(3)])
+  plt.bar([0, 1, 2], values, color='r', yerr=std / numpy.sqrt(count), bottom=numpy.mean(results2[:, -1]))
+
+  plt.title(f'model2 : {columns[j]}')
+
+  plt.show()
+
+
+# To catch interacting variables, plot paried bar charts
+for j1 in range(7):
+  for j2 in range(j1 + 1, 7):
+    N = 9
+    ind = numpy.arange(N)  # the x locations for the groups
+    width = 0.4       # the width of the bars
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    values1 = [100 + numpy.mean(results1[numpy.logical_and(results1[:, j1] == i//3, results1[:, j2] == i%3)][:, -2]) for i in range(9)]
+    std1 = [numpy.std(results1[numpy.logical_and(results1[:, j1] == i//3, results1[:, j2] == i%3)][:, -2]) for i in range(9)]
+    rects1 = ax.bar(ind, values1, width, color='r', yerr=std1)
+
+    values2 = [100 + numpy.mean(results2[numpy.logical_and(results2[:, j1] == i//3, results2[:, j2] == i%3)][:, -1]) for i in range(9)]
+    std2 = [numpy.std(results2[numpy.logical_and(results2[:, j1] == i//3, results2[:, j2] == i%3)][:, -1]) for i in range(9)]
+    rects2 = ax.bar(ind + width, values2, width, color='g', yerr=std2)
+
+    ax.set_ylabel('log(E)')
+    ax.set_xticks(ind + width)
+    ax.set_xticklabels((f'{i // 3}, {i % 3}' for i in range(9)))
+    ax.legend((rects1[0], rects2[0]), ('model1', 'model2'))
+
+    def autolabel(rects):
+      for rect in rects:
+        h = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * h, '%d' % int(h),
+                ha='center', va='bottom')
+
+    autolabel(rects1)
+    autolabel(rects2)
+
+    plt.title(f'{columns[j1]}, {columns[j2]}')
+
+    plt.show()
+
+##### REFERENCE ##### PRIORS USED HERE
+# Half ranged  === 0
+alpha_range_small = [-0.05, 0.05]
+c_range_small = [-0.5, 0.5]
+f0_range_small = [-1, 1]
+f1_range_small = [-0.5, 0.5]
+lambduh_range_small = [0.5, 1.5]
+nu_range_small = [0.6, 0.8]
+omega_range_small = [0, 1]
+
+# Normal ranged === 1
+alpha_range = [-0.1, 0.1]
+c_range = [-1, 1]
+f0_range = [-2, 2]
+f1_range = [-1, 1]
+lambduh_range = [0, 2]
+nu_range = [0.5, 0.9]
+omega_range = [0, 2]
+
+# Double ranged === 2
+alpha_range_large = [-0.2, 0.2]
+c_range_large = [-2, 2]
+f0_range_large = [-4, 4]
+f1_range_large = [-2, 2]
+lambduh_range_large = [-1, 3]
+nu_range_large = [0.3, 1.1]
+omega_range_large = [0, 4]
