@@ -3,6 +3,7 @@ import pymultinest
 import os
 import pickle
 from multiprocessing import Pool, current_process
+from copy import copy
 
 today = datetime.date.fromtimestamp(time.time())
 
@@ -233,11 +234,53 @@ if __name__ == "__main__":
     analysis1 = run_pymultinest(prior, model1, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
     analysis2 = run_pymultinest(prior, model2, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
 
-  p = Pool()
-
   # pdb.set_trace()
 
-  p.map(run, range(len(priors)), chunksize=1)
+  # p.map(run, range(len(priors)), chunksize=1)
+
+  ## Random prior range study
+  GL_min = 8
+  GL_max = 76.8
+  points = 1000
+
+  ## Removing a parameter test
+  prior_num = 51
+  prior_range = numpy.linspace(-5, 5, prior_num)
+
+  EFT_s = {'alpha': 0, 'c': 0, 'f0': 0.657, 'f1': -0.0380, 'lambduh': 1, 'nu': 2/3, 'omega': 0.71}
+  best_fits = {'alpha': 0.0014, 'c': -0.134, 'f0': 0.608, 'f1': -0.0602, 'lambduh': 1.064, 'nu': 0.6844, 'omega': 0.454}
+
+  prior = [alpha_range, c_range, f0_range, f1_range, lambduh_range, nu_range, omega_range]
+
+  for i, param in enumerate(['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu', 'omega']):
+    def run2(prior_size):
+      def model1(*args):
+        return model27(*args)
+
+      size = abs(best_fits[param] - EFT_s[param])
+
+      print(f"Running {param} for prior_size = numpy.exp({prior_size:.1f})")
+      model1.__name__ = f"model27_{param}{prior_size:.1f}"
+
+      variable_prior = [EFT_s[param] - size * 0.5 * numpy.exp(prior_size), EFT_s[param] + size * 0.5 * numpy.exp(prior_size)]
+
+      prior_copy = copy(prior)
+      prior_copy[i] = variable_prior
+
+      analysis1 = run_pymultinest(prior, model1, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
+
+      return None
+
+
+    p = Pool() 
+    p.map(run2, prior_range, chunksize=1)
+    p.close()
+
+  # Now also run the model without lambduh as a variable to compare
+  prior = [alpha_range, c_range, f0_range, f1_range, nu_range, omega_range]
+  analysis = run_pymultinest(prior, model35, GL_min, GL_max, 6, directory, n_live_points=points, clean_files=True)
+
+
   # for i in range(3 ** 7 - 6, 3 ** 7):
   #   run(i)
 
