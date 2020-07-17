@@ -4,6 +4,7 @@ import os
 import pickle
 from multiprocessing import Pool, current_process
 from copy import copy
+from time import sleep
 
 today = datetime.date.fromtimestamp(time.time())
 
@@ -54,7 +55,7 @@ def run_pymultinest(prior_range, model, GL_min, GL_max, n_params, directory,
 
   prior = prior_maker(prior_range)
 
-  basename = f"{directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}"
+  basename = f"{directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_p{n_live_points}"
 
   # Get the parameter names of the model from the function
   # Ignore the first 4 parameters because they aren't fitting parameters
@@ -105,26 +106,26 @@ def run_pymultinest(prior_range, model, GL_min, GL_max, n_params, directory,
 
   if clean_files:
     # Remove the remaining saved files to conserve disk space
-    print(f"Removing files : {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}*")
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}ev.dat')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}live.points')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}.paramnames')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}params.json')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}phys_live.points')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}post_equal_weights.dat')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}post_separate.dat')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}.ranges')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}resume.dat')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}stats.dat')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}summary.txt')
-    os.popen(f'rm {directory}{model.__name__}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}.txt')
+    print(f"Removing files : {basename}*")
+    os.popen(f'rm {basename}ev.dat')
+    os.popen(f'rm {basename}live.points')
+    os.popen(f'rm {basename}.paramnames')
+    os.popen(f'rm {basename}params.json')
+    os.popen(f'rm {basename}phys_live.points')
+    os.popen(f'rm {basename}post_equal_weights.dat')
+    os.popen(f'rm {basename}post_separate.dat')
+    os.popen(f'rm {basename}.ranges')
+    os.popen(f'rm {basename}resume.dat')
+    os.popen(f'rm {basename}stats.dat')
+    os.popen(f'rm {basename}summary.txt')
+    os.popen(f'rm {basename}.txt')
 
   return analysis
 
 
 if __name__ == "__main__":
   # Where the results are saved
-  directory = f'model_output_{today.year}_{today.month}_{today.day}/'
+  directory = f'{today.year}_{today.month}_{today.day}/'
 
   # Default prior range
   alpha_range = [-0.1, 0.1]
@@ -171,7 +172,7 @@ if __name__ == "__main__":
   GL_max = 76.8
   points = 8000
 
- # Half ranged
+  # Half ranged
   # alpha_range_small = [-0.05, 0.05]
   c_range_small = [-0.5, 0.5]
   f0_range_small = [-1, 1]
@@ -231,8 +232,8 @@ if __name__ == "__main__":
     # print(name)
     # print(model1.__name__)
 
-    analysis1 = run_pymultinest(prior, model1, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
-    analysis2 = run_pymultinest(prior, model2, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
+    # analysis1 = run_pymultinest(prior, model1, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
+    # analysis2 = run_pymultinest(prior, model2, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
 
   # pdb.set_trace()
 
@@ -247,12 +248,13 @@ if __name__ == "__main__":
   prior_num = 51
   prior_range = numpy.linspace(-5, 5, prior_num)
 
-  EFT_s = {'alpha': 0, 'c': 0, 'f0': 0.657, 'f1': -0.0380, 'lambduh': 1, 'nu': 2/3, 'omega': 0.71}
+  EFT_s = {'alpha': 0, 'c': 0, 'f0': 0.657, 'f1': -0.0380, 'lambduh': 1, 'nu': 0.71, 'omega': 0.71}
   best_fits = {'alpha': 0.0014, 'c': -0.134, 'f0': 0.608, 'f1': -0.0602, 'lambduh': 1.064, 'nu': 0.6844, 'omega': 0.454}
 
   prior = [alpha_range, c_range, f0_range, f1_range, lambduh_range, nu_range, omega_range]
 
-  for i, param in enumerate(['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu', 'omega']):
+  # for i, param in enumerate(['alpha', 'c', 'f0', 'f1', 'lambduh', 'nu', 'omega']):
+  for i, param in enumerate(['nu']):
     def run2(prior_size):
       def model1(*args):
         return model27(*args)
@@ -260,25 +262,26 @@ if __name__ == "__main__":
       size = abs(best_fits[param] - EFT_s[param])
 
       print(f"Running {param} for prior_size = numpy.exp({prior_size:.1f})")
-      model1.__name__ = f"model27_{param}{prior_size:.1f}"
+      model1.__name__ = f"model27_{param}_{EFT_s[param]}_{prior_size:.1f}"
 
       variable_prior = [EFT_s[param] - size * 0.5 * numpy.exp(prior_size), EFT_s[param] + size * 0.5 * numpy.exp(prior_size)]
 
-      prior_copy = copy(prior)
-      prior_copy[i] = variable_prior
+      # prior_copy = copy(prior)
+      # prior_copy[i] = variable_prior
+      prior_copy = [alpha_range, c_range, f0_range, f1_range, lambduh_range, variable_prior, omega_range]
 
-      analysis1 = run_pymultinest(prior, model1, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
+      # analysis1 = run_pymultinest(prior_copy, model1, GL_min, GL_max, n_params, directory, n_live_points=points, clean_files=True)
 
       return None
 
 
-    p = Pool() 
-    p.map(run2, prior_range, chunksize=1)
-    p.close()
+    # p = Pool() 
+    # p.map(run2, prior_range, chunksize=1)
+    # p.close()
 
   # Now also run the model without lambduh as a variable to compare
-  prior = [alpha_range, c_range, f0_range, f1_range, nu_range, omega_range]
-  analysis = run_pymultinest(prior, model35, GL_min, GL_max, 6, directory, n_live_points=points, clean_files=True)
+  # prior = [alpha_range, c_range, f0_range, f1_range, nu_range, omega_range]
+  # analysis = run_pymultinest(prior, model35, GL_min, GL_max, 6, directory, n_live_points=points, clean_files=True)
 
 
   # for i in range(3 ** 7 - 6, 3 ** 7):
@@ -304,3 +307,88 @@ if __name__ == "__main__":
   #                            directory, likelihood_kwargs=kwargs, n_live_points=points)
   # analysis2 = run_pymultinest(prior_range, model102, GL_min, GL_max, n_params,
   #                            directory, likelihood_kwargs=kwargs, n_live_points=points)
+
+
+  ## Follow Andreas suggestion - use no. sigma as the units of volume
+  GL_min = 8
+  GL_max = 76.8
+
+  def get_prior_range_from_sigma(no_sigma):
+    central_values = [0.00139776, -0.13428683, 0.60781802, -0.06022454, 1.06381208,
+                      0.68442289, 0.45382393]
+
+    sigma_sizes = [0.001201552008911135, 0.13898290215125328, 0.09694044410239777,
+                   0.010912615653831864, 0.07759036879052572, 0.01227074127553418,
+                   0.8113394466285749]
+    
+    prior_range = numpy.zeros((7, 2))
+    for i in range(7):
+      prior_range[i][0] = central_values[i] - sigma_sizes[i] * 10 ** no_sigma[i] / 2
+      prior_range[i][1] = central_values[i] + sigma_sizes[i] * 10 ** no_sigma[i] / 2
+
+    # nu and omega need a lower limit of zero
+    if prior_range[5][0] < 0:
+      x = -prior_range[5][0]
+      prior_range[5][0] = 0
+      prior_range[5][1] = prior_range[5][1] + x
+
+    if prior_range[6][0] < 0:
+      x = -prior_range[6][0]
+      prior_range[6][0] = 0
+      prior_range[6][1] = prior_range[6][1] + x
+    
+    return prior_range
+
+  no_points = [500, 1000, 2000, 5000, 10000, 20000]
+  no_samples = 100
+
+  for points in no_points:
+    def run3(i):
+      # def model1(*args):
+      #   return model27(*args)
+
+      # def model2(*args):
+      #   return model28(*args)
+
+      # no_sigma = numpy.random.rand(7) * 2
+
+      # prior_range = get_prior_range_from_sigma(no_sigma)
+
+      # name = f"{no_sigma[0]:.3f}_{no_sigma[1]:.3f}_{no_sigma[2]:.3f}_{no_sigma[3]:.3f}_{no_sigma[4]:.3f}_{no_sigma[5]:.3f}_{no_sigma[6]:.3f}"
+
+      # model1.__name__ = f"27_{name}"
+      # model2.__name__ = f"28_{name}"
+
+      # run_pymultinest(prior_range, model1, GL_min, GL_max, 7, directory, n_live_points=points, clean_files=True)
+      # run_pymultinest(prior_range, model2, GL_min, GL_max, 7, directory, n_live_points=points, clean_files=True)
+      
+      def model1(*args):
+        return model27(*args)
+
+      def model2(*args):
+        return model28(*args)
+
+      # Also run a systematic sized prior which is uniform in all directions
+      no_sigma = numpy.array([i / 50, ] * 7)
+
+      prior_range = get_prior_range_from_sigma(no_sigma)
+
+      name = f"{no_sigma[0]:.3f}_{no_sigma[1]:.3f}_{no_sigma[2]:.3f}_{no_sigma[3]:.3f}_{no_sigma[4]:.3f}_{no_sigma[5]:.3f}_{no_sigma[6]:.3f}"
+
+      def model1(*args):
+        return model27(*args)
+
+      def model2(*args):
+        return model28(*args)
+
+      model1.__name__ = f"27_{name}"
+      model2.__name__ = f"28_{name}"
+
+      run_pymultinest(prior_range, model1, GL_min, GL_max, 7, directory, n_live_points=points, clean_files=True)
+      run_pymultinest(prior_range, model2, GL_min, GL_max, 7, directory, n_live_points=points, clean_files=True)
+
+    p = Pool()
+    p.map(run3, range(no_samples), chunksize=1)
+    p.close()
+
+
