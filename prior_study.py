@@ -11,12 +11,11 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
 today = datetime.date.fromtimestamp(time.time())
-directory = f'posterior_data/{today.year}_{today.month}_{6}/'
+directory = f'posterior_data/{today.year}_{today.month}_{2}/'
 
 GL_min = 8
 GL_max = 76.8
-n_live_points = 3000
-
+n_live_points = 1000
 
 results_full = numpy.zeros((3 ** 7, 9))
 
@@ -38,6 +37,7 @@ for i1 in range(3):
                 E1, delta_E1, sigma_1_range1, sigma_2_range1, median1 = numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan
 
               filename2 = f"{directory}model28_{i1}_{i2}_{i3}_{i4}_{i5}_{i6}_{i7}_GLmin{GL_min:.1f}_GLmax{GL_max:.1f}_points{n_live_points}_analysis_small.pcl"
+
               try:
                 E2, delta_E2, sigma_2_range2, sigma_2_range2, median2 = pickle.load(open(filename2, "rb"))
               except:
@@ -90,7 +90,6 @@ best2 = numpy.unravel_index(numpy.argmax(z_full * 0.95 + y2_full), (3, ) * 7)
 y1_full[numpy.ravel_multi_index(best1, (3, ) * 7)]
 z_full[numpy.ravel_multi_index(best1, (3, ) * 7)]
 
-
 y2_full[numpy.ravel_multi_index(best2, (3, ) * 7)]
 z_full[numpy.ravel_multi_index(best2, (3, ) * 7)]
 
@@ -124,6 +123,41 @@ if not os.path.isdir(graph_dir):
 plt.savefig(f"{graph_dir}/prior_E_graph_corrected.png")
 
 plt.close()
+
+# Calculate the prior volume for each prior
+Base_volume = 0.1 * 1 * 2 * 1 * 1 * 0.2 * 1
+Volume = numpy.product(2 ** results_full[:, :-2], axis=1) * Base_volume
+
+plt.scatter(Volume, y1_full + numpy.log(Volume), color='r', label='log(g)', marker='x')
+plt.scatter(Volume, y2_full + numpy.log(Volume), color='b', label='log(1/L)', marker='x')
+
+plt.xscale('log')
+plt.xlabel("Prior Volume")
+plt.ylabel("log(Evidence) + log(Volume)")
+plt.legend()
+
+plt.savefig(f"{graph_dir}/prior_E_graph_Vol_corrected.png")
+plt.close()
+
+
+# Graph of the Evidence, e.g. Delta(log(E))
+plt.scatter(Volume, y1_full - y2_full, color='k', marker='x')
+plt.fill_between([min(Volume) / 2, max(Volume) * 2], [0, 0], [1, 1], color='g', alpha=0.2, label='Insignificant 0 < x < 1')
+plt.fill_between([min(Volume) / 2, max(Volume) * 2], [1, 1], [2.5, 2.5], color='r', alpha=0.2, label='Significant 1 < x < 2.5')
+plt.fill_between([min(Volume) / 2, max(Volume) * 2], [2.5, 2.5], [max(y1_full - y2_full) * 1.1, max(y1_full - y2_full) * 1.1], color='b', alpha=0.2, label='Very Significant, x > 2.5')
+
+plt.xscale('log')
+plt.xlabel("Prior Volume")
+plt.xlim((min(Volume) / 2, max(Volume) * 2))
+plt.ylim((0, max(y1_full - y2_full) * 1.1))
+
+plt.ylabel("log(E(model1)) - log(E(model2))")
+plt.legend()
+plt.show()
+
+plt.savefig(f"{graph_dir}/prior_E_diff.png")
+
+pdb.set_trace()
 
 # Plot some bar charts to for each variable
 # for j in range(7):
@@ -161,7 +195,7 @@ plt.close()
   #   plt.show()
 
 
-results2 = results2[results2[:, 1] == 2]
+# results2 = results2[results2[:, 1] == 2]
 # results2 = results2[results2[:, 0] == 1]
 # results1 = results1[results1[:, 0] == 2]
 
