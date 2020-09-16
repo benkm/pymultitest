@@ -26,7 +26,7 @@ def mPT_1loop(g, N):
 # with open(f'Ben_N={N}_B={Bbar_1}_B={Bbar_2}.pcl', 'rb') as pickle_file:
 
 
-def load_in_data(filename):
+def load_in_data(filename, keep_1_Bbar=False, Bbar_special=None):
   # Load in Andreas' pickled data
   with open(filename, 'rb') as pickle_file:
     data = pickle.load(pickle_file, encoding='latin1')
@@ -48,16 +48,31 @@ def load_in_data(filename):
         Bbar, N, g, L = scanf("DBinder_crossing_B%f_%d_%f_%d", key)
 
         # Append them to the lists of parameter values
-        Bbar_s.append(Bbar)
-        N_s.append(N)
-        g_s.append(g)
-        L_s.append(L)
-        
-        # Extract the observed mass value
-        m_s.append(data[key][4][0])
+        if keep_1_Bbar:
+          if abs(Bbar - float(Bbar_special)) < 10 ** -6:
 
-        # Now extract the 500 bootstrap samples
-        samples.append(data[key][4][2])
+            Bbar_s.append(Bbar)
+            N_s.append(N)
+            g_s.append(g)
+            L_s.append(L)
+            
+            # Extract the observed mass value
+            m_s.append(data[key][4][0])
+
+            # Now extract the 500 bootstrap samples
+            samples.append(data[key][4][2])
+
+        else:
+          Bbar_s.append(Bbar)
+          N_s.append(N)
+          g_s.append(g)
+          L_s.append(L)
+          
+          # Extract the observed mass value
+          m_s.append(data[key][4][0])
+
+          # Now extract the 500 bootstrap samples
+          samples.append(data[key][4][2])
 
     samples = numpy.array(samples)
 
@@ -124,6 +139,42 @@ def NC_logg(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
 
 def NC_logL(N, g, L, Bbar, alpha, f0, f1, lambduh, nu):
   return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * ((Bbar - f0) / f1) - lambduh * K2(L, N))
+
+
+def NC_logg_single(N, g, L, Bbar, alpha, f, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * f - lambduh * K1(g, N))
+
+
+def NC_logL_single(N, g, L, Bbar, alpha, f, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * f - lambduh * K2(L, N))
+
+
+def NC_logg_f_nu(N, g, L, Bbar, alpha, f, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * f ** (numpy.log(nu) / (g * L)) - lambduh * K1(g, N))
+
+
+def NC_logL_f_nu(N, g, L, Bbar, alpha, f, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * f ** (numpy.log(nu) / (g * L)) - lambduh * K2(L, N))
+
+
+def quadratic(N, g, L, Bbar, alpha, f0, f1, f2, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (- f1 + numpy.sqrt(f1 ** 2 - 2 * (f0 - Bbar) * f2)) / f2 - lambduh * K1(g, N))
+
+
+def QN(N, g, L, Bbar, alpha, f0, f1, f2, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (- f1 - numpy.sqrt(f1 ** 2 - 2 * (f0 - Bbar) * f2)) / f2 - lambduh * K1(g, N))
+
+
+def QN_L(N, g, L, Bbar, alpha, f0, f1, f2, lambduh, nu):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (- f1 - numpy.sqrt(f1 ** 2 - 2 * (f0 - Bbar) * f2)) / f2 - lambduh * K2(L, N))
+
+
+def param_8g(N, g, L, Bbar, alpha, c1, c2, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((Bbar / (1 + (c1 + c2 * Bbar) * (g * L) ** -omega)) - f0) / f1) - lambduh * K1(g, N))
+
+
+def param_8L(N, g, L, Bbar, alpha, c1, c2, f0, f1, lambduh, nu, omega):
+  return mPT_1loop(g, N) + g ** 2 * (alpha + (g * L) ** (-1 / nu) * (((Bbar / (1 + (c1 + c2 * Bbar) * (g * L) ** -omega)) - f0) / f1) - lambduh * K2(L, N))
 
 
 # More accurate asymptotic model
@@ -214,7 +265,7 @@ def colors(g, mini, maxi):
     raise(ValueError)
 
 
-def plot_fit(res, cov_matrix, model_function, directory, GL_min, GL_max,
+def plot_fit(res_x, cov_matrix, model_function, directory, GL_min, GL_max,
              N, m_s, g_s, L_s, Bbar_s, ext=100, incl_alpha=False, incl_K1=False):
   """
     ext : extension factor towards origin - model is plotted to 1 / (GL_max * ext)
@@ -229,8 +280,8 @@ def plot_fit(res, cov_matrix, model_function, directory, GL_min, GL_max,
   alpha_index = numpy.argwhere(numpy.array(param_names) == "alpha")
   lambduh_index = numpy.argwhere(numpy.array(param_names) == "lambduh")
 
-  alpha = res.x[alpha_index][0, 0]
-  lambduh = res.x[lambduh_index][0, 0]
+  alpha = res_x[alpha_index[0, 0]]
+  lambduh = res_x[lambduh_index[0, 0]]
 
   for Bbar in set(Bbar_s):
     for g in set(g_s):
@@ -244,14 +295,14 @@ def plot_fit(res, cov_matrix, model_function, directory, GL_min, GL_max,
 
       L_range = numpy.linspace(GL_min / g, GL_max * ext / g, 1000)
 
-      predictions = model_function(N, g, L_range, Bbar, *res.x)
+      predictions = model_function(N, g, L_range, Bbar, *res_x)
 
       # Plot a smooth line for the model
       plt.plot(1 / (g * L_range), predictions / g, color=colors(g, 0.1, 0.6))
 
       if incl_alpha:
         # Plot the mPT_1loop + alpha * g ** 2 contribution
-        plt.plot([1 / (GL_max * ext), 1 / GL_min], [(mPT_1loop(g, N) + g ** 2 * alpha)/ g, (mPT_1loop(g, N) + g ** 2 * alpha) / g], color=colors(g, 0.1, 0.6), ls='--', label='mPT_1loop + alpha term')
+        plt.plot([1 / (GL_max * ext), 1 / GL_min], [(mPT_1loop(g, N) + g ** 2 * alpha) / g, (mPT_1loop(g, N) + g ** 2 * alpha) / g], color=colors(g, 0.1, 0.6), ls='--', label='mPT_1loop + alpha term')
 
       if incl_K1:
         K1_term = - lambduh * g ** 2 * K1(g, N)
@@ -280,5 +331,3 @@ def make_res_function(N, m_s, g_s, L_s, Bbar_s):
     return normalized_residuals
 
   return res_function
-
-
